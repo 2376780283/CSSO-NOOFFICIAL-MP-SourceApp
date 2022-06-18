@@ -1138,6 +1138,8 @@ public:
 
 	// Performs final verification of all compositor templates (after they've all been initially loaded).
 	virtual bool				VerifyTextureCompositorTemplates( ) = 0;
+
+	virtual uint32				GetCurrentFrameCount() = 0;
 };
 
 
@@ -1284,7 +1286,13 @@ public:
 	virtual void DestroyIndexBuffer( IIndexBuffer * ) = 0;
 	// Do we need to specify the stream here in the case of locking multiple dynamic VBs on different streams?
 	virtual IVertexBuffer *GetDynamicVertexBuffer( int streamID, VertexFormat_t vertexFormat, bool bBuffered = true ) = 0;
-	virtual IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered = true ) = 0;
+	virtual IIndexBuffer *GetDynamicIndexBuffer() = 0;
+	// Legacy callers use the same 16-bit dynamic buffer.
+	IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered = true )
+	{
+		Assert( fmt == MATERIAL_INDEX_FORMAT_16BIT );
+		return GetDynamicIndexBuffer();
+	}
 	virtual void BindVertexBuffer( int streamID, IVertexBuffer *pVertexBuffer, int nOffsetInBytes, int nFirstVertex, int nVertexCount, VertexFormat_t fmt, int nRepetitions = 1 ) = 0;
 	virtual void BindIndexBuffer( IIndexBuffer *pIndexBuffer, int nOffsetInBytes ) = 0;
 	virtual void Draw( MaterialPrimitiveType_t primitiveType, int firstIndex, int numIndices ) = 0;

@@ -109,7 +109,7 @@ class C_OP_RenderPoints : public CParticleRenderOperatorInstance
 		return PARTICLE_ATTRIBUTE_XYZ_MASK;
 	}
 
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
 
 	struct C_OP_RenderPointsContext_t
 	{
@@ -122,7 +122,7 @@ class C_OP_RenderPoints : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderPointsContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 	{
 		C_OP_RenderPointsContext_t *pCtx = reinterpret_cast<C_OP_RenderPointsContext_t *>( pContext );
 		pCtx->m_VisibilityData.m_bUseVisibility = false;
@@ -135,7 +135,7 @@ DEFINE_PARTICLE_OPERATOR( C_OP_RenderPoints, "render_points", OPERATOR_SINGLETON
 BEGIN_PARTICLE_RENDER_OPERATOR_UNPACK( C_OP_RenderPoints ) 
 END_PARTICLE_OPERATOR_UNPACK( C_OP_RenderPoints )
 
-void C_OP_RenderPoints::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderPoints::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	C_OP_RenderPointsContext_t *pCtx = reinterpret_cast<C_OP_RenderPointsContext_t *>( pContext );
 	IMaterial *pMaterial = pParticles->m_pDef->GetMaterial();
@@ -171,7 +171,7 @@ void C_OP_RenderPoints::Render( IMatRenderContext *pRenderContext, CParticleColl
 			meshBuilder.AdvanceVertex();
 		}
 		meshBuilder.End();
-		pMesh->Draw();
+		pMesh->DrawModulated( vecDiffuseModulation );
 	}
 }
 
@@ -242,7 +242,7 @@ class C_OP_RenderSprites : public C_OP_RenderPoints
 		return sizeof( C_OP_RenderSpritesContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 	{
 		C_OP_RenderSpritesContext_t *pCtx = reinterpret_cast<C_OP_RenderSpritesContext_t *>( pContext );
 		pCtx->m_nOrientationVarToken = 0;
@@ -272,19 +272,19 @@ class C_OP_RenderSprites : public C_OP_RenderPoints
 
 	virtual void InitParams( CParticleSystemDefinition *pDef, CDmxElement *pElement );
 	virtual int GetParticlesToRender( CParticleCollection *pParticles, void *pContext, int nFirstParticle, int nRemainingVertices, int nRemainingIndices, int *pVertsUsed, int *pIndicesUsed ) const;
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
 	virtual void RenderUnsorted( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, CMeshBuilder &meshBuilder, int nVertexOffset, int nFirstParticle, int nParticleCount ) const;
 	void RenderSpriteCard( CMeshBuilder &meshBuilder, C_OP_RenderSpritesContext_t *pCtx, SpriteRenderInfo_t& info, int hParticle, ParticleRenderData_t const *pSortList, Vector *pCamera ) const;
 	void RenderTwoSequenceSpriteCard( CMeshBuilder &meshBuilder, C_OP_RenderSpritesContext_t *pCtx, SpriteRenderInfo_t& info, int hParticle, ParticleRenderData_t const *pSortList, Vector *pCamera ) const;
 
-	void RenderNonSpriteCardCameraFacing( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const;
+	void RenderNonSpriteCardCameraFacing( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const;
 
 	void RenderNonSpriteCardZRotating( CMeshBuilder &meshBuilder, C_OP_RenderSpritesContext_t *pCtx, SpriteRenderInfo_t& info, int hParticle, const Vector& vecCameraPos, ParticleRenderData_t const *pSortList ) const;
-	void RenderNonSpriteCardZRotating( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const;
+	void RenderNonSpriteCardZRotating( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const;
 	void RenderUnsortedNonSpriteCardZRotating( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, CMeshBuilder &meshBuilder, int nVertexOffset, int nFirstParticle, int nParticleCount ) const;
 
 	void RenderNonSpriteCardOriented( CMeshBuilder &meshBuilder, C_OP_RenderSpritesContext_t *pCtx, SpriteRenderInfo_t& info, int hParticle, const Vector& vecCameraPos, ParticleRenderData_t const *pSortList, bool bUseYaw ) const;
-	void RenderNonSpriteCardOriented( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial, bool bUseYaw ) const;
+	void RenderNonSpriteCardOriented( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial, bool bUseYaw ) const;
 	void RenderUnsortedNonSpriteCardOriented( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, CMeshBuilder &meshBuilder, int nVertexOffset, int nFirstParticle, int nParticleCount ) const;
 
 	// cycles per second
@@ -353,7 +353,7 @@ int C_OP_RenderSprites::GetParticlesToRender( CParticleCollection *pParticles,
 	return nParticleCount;
 }
 
-void C_OP_RenderSprites::RenderNonSpriteCardCameraFacing( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const
+void C_OP_RenderSprites::RenderNonSpriteCardCameraFacing( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const
 {
 
 	C_OP_RenderSpritesContext_t *pCtx = reinterpret_cast<C_OP_RenderSpritesContext_t *>( pContext );
@@ -510,7 +510,7 @@ void C_OP_RenderSprites::RenderNonSpriteCardCameraFacing( CParticleCollection *p
 			meshBuilder.AdvanceVertex();
 		}
 		meshBuilder.End();
-		pMesh->Draw();
+		pMesh->DrawModulated( vecDiffuseModulation );
 	}
 
 	pRenderContext->EnableUserClipTransformOverride( false );
@@ -637,7 +637,7 @@ void C_OP_RenderSprites::RenderNonSpriteCardZRotating( CMeshBuilder &meshBuilder
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void C_OP_RenderSprites::RenderNonSpriteCardZRotating( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const
+void C_OP_RenderSprites::RenderNonSpriteCardZRotating( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial ) const
 {
 	C_OP_RenderSpritesContext_t *pCtx = reinterpret_cast<C_OP_RenderSpritesContext_t *>( pContext );
 
@@ -672,7 +672,7 @@ void C_OP_RenderSprites::RenderNonSpriteCardZRotating( CParticleCollection *pPar
 			RenderNonSpriteCardZRotating( meshBuilder, pCtx, info, hParticle, vecCameraPos, pSortList );
 		}
 		meshBuilder.End();
-		pMesh->Draw();
+		pMesh->DrawModulated( vecDiffuseModulation );
 	}
 }
 
@@ -840,7 +840,7 @@ void C_OP_RenderSprites::RenderNonSpriteCardOriented(
 	info.m_nVertexOffset += 4;
 }
 
-void C_OP_RenderSprites::RenderNonSpriteCardOriented( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial, bool bUseYaw ) const
+void C_OP_RenderSprites::RenderNonSpriteCardOriented( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMatRenderContext *pRenderContext, IMaterial *pMaterial, bool bUseYaw ) const
 {
 	C_OP_RenderSpritesContext_t *pCtx = reinterpret_cast<C_OP_RenderSpritesContext_t *>( pContext );
 
@@ -876,7 +876,7 @@ void C_OP_RenderSprites::RenderNonSpriteCardOriented( CParticleCollection *pPart
 		}
 
 		meshBuilder.End();
-		pMesh->Draw();
+		pMesh->DrawModulated( vecDiffuseModulation );
 	}
 }
 
@@ -1155,7 +1155,7 @@ void C_OP_RenderSprites::RenderTwoSequenceSpriteCard( CMeshBuilder &meshBuilder,
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void C_OP_RenderSprites::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderSprites::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	IMaterial *pMaterial = pParticles->m_pDef->GetMaterial();
 	C_OP_RenderSpritesContext_t *pCtx = reinterpret_cast<C_OP_RenderSpritesContext_t *>( pContext );
@@ -1179,19 +1179,19 @@ void C_OP_RenderSprites::Render( IMatRenderContext *pRenderContext, CParticleCol
 		switch( m_nOrientationType )
 		{
 		case 0:
-			RenderNonSpriteCardCameraFacing( pParticles, pContext, pRenderContext, pMaterial );
+			RenderNonSpriteCardCameraFacing( pParticles, vecDiffuseModulation, pContext, pRenderContext, pMaterial );
 			break;
 
 		case 1:
-			RenderNonSpriteCardZRotating( pParticles, pContext, pRenderContext, pMaterial );
+			RenderNonSpriteCardZRotating( pParticles, vecDiffuseModulation, pContext, pRenderContext, pMaterial );
 			break;
 		
 		case 2:
-			RenderNonSpriteCardOriented( pParticles, pContext, pRenderContext, pMaterial, false );
+			RenderNonSpriteCardOriented( pParticles, vecDiffuseModulation, pContext, pRenderContext, pMaterial, false );
 			break;
 
 		case 3:
-			RenderNonSpriteCardOriented( pParticles, pContext, pRenderContext, pMaterial, true );
+			RenderNonSpriteCardOriented( pParticles, vecDiffuseModulation, pContext, pRenderContext, pMaterial, true );
 			break;
 		}
 
@@ -1225,6 +1225,15 @@ void C_OP_RenderSprites::Render( IMatRenderContext *pRenderContext, CParticleCol
 	MaterialPrimitiveType_t	primType = bUseInstancing ? MATERIAL_INSTANCED_QUADS : MATERIAL_TRIANGLES;
 	int nMaxParticlesInBatch = GetMaxParticlesPerBatch( pRenderContext, pMaterial, bUseInstancing );
 
+	CCachedParticleBatches *pCachedBatches = NULL;
+	if ( g_pMaterialSystem->GetThreadMode() != MATERIAL_SINGLE_THREADED &&
+		 !pParticles->m_pDef->m_bShouldSort && !pCtx->m_VisibilityData.m_bUseVisibility )
+	{
+		pParticles->ResetParticleCache();
+		pCachedBatches = pParticles->GetCachedParticleBatches();
+	}
+	int nBatch = 0;
+
 	int nParticles;
 	const ParticleRenderData_t *pSortList = pParticles->GetRenderList( pRenderContext, true, &nParticles, &pCtx->m_VisibilityData );
 
@@ -1235,6 +1244,17 @@ void C_OP_RenderSprites::Render( IMatRenderContext *pRenderContext, CParticleCol
 	{
 		int nParticlesInBatch = min( nMaxParticlesInBatch, nParticles );
 		nParticles -= nParticlesInBatch;
+
+		ICachedPerFrameMeshData *pCachedBatch = pCachedBatches ? pCachedBatches->GetCachedBatch( nBatch ) : NULL;
+		if ( pCachedBatch )
+		{
+			IMesh *pMesh = pRenderContext->GetDynamicMesh( true );
+			pMesh->ReconstructFromCachedPerFrameMeshData( pCachedBatch );
+			pMesh->DrawModulated( vecDiffuseModulation );
+			pSortList -= nParticlesInBatch;
+			++nBatch;
+			continue;
+		}
 
 		int vertexCount	= bUseInstancing ? nParticlesInBatch	: nParticlesInBatch * 4;
 		int indexCount	= bUseInstancing ? 0					: nParticlesInBatch * 6;
@@ -1270,7 +1290,10 @@ void C_OP_RenderSprites::Render( IMatRenderContext *pRenderContext, CParticleCol
 			}
 		}
 		meshBuilder.End();
-		pMesh->Draw();
+		if ( pCachedBatches && nBatch < MAX_CACHED_PARTICLE_BATCHES )
+			pCachedBatches->SetCachedBatch( nBatch, pMesh->GetCachedPerFrameMeshData() );
+		++nBatch;
+		pMesh->DrawModulated( vecDiffuseModulation );
 	}
 }
 
@@ -1362,7 +1385,7 @@ class C_OP_RenderSpritesTrail : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderSpriteTrailContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 	{
 		C_OP_RenderSpriteTrailContext_t *pCtx = reinterpret_cast<C_OP_RenderSpriteTrailContext_t *>( pContext );
 		if ( VisibilityInputs.m_nCPin >= 0 )
@@ -1389,7 +1412,7 @@ class C_OP_RenderSpritesTrail : public CParticleRenderOperatorInstance
 	}
 
 	virtual int GetParticlesToRender( CParticleCollection *pParticles, void *pContext, int nFirstParticle, int nRemainingVertices, int nRemainingIndices, int *pVertsUsed, int *pIndicesUsed ) const ;
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
 	virtual void RenderUnsorted( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, CMeshBuilder &meshBuilder, int nVertexOffset, int nFirstParticle, int nParticleCount ) const;
 
 	void RenderSpriteTrail( CMeshBuilder &meshBuilder, SpriteTrailRenderInfo_t& info, int hParticle, const Vector &vecCameraPos, float flOODt, ParticleRenderData_t const *pSortlist ) const;
@@ -1545,7 +1568,7 @@ void C_OP_RenderSpritesTrail::RenderSpriteTrail( CMeshBuilder &meshBuilder,
 }
 
 
-void C_OP_RenderSpritesTrail::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderSpritesTrail::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	C_OP_RenderSpriteTrailContext_t *pCtx = reinterpret_cast<C_OP_RenderSpriteTrailContext_t *>( pContext );
 	IMaterial *pMaterial = pParticles->m_pDef->GetMaterial();
@@ -1595,7 +1618,7 @@ void C_OP_RenderSpritesTrail::Render( IMatRenderContext *pRenderContext, CPartic
 			RenderSpriteTrail( meshBuilder, info, hParticle, vecCameraPos, flOODt, pSortList );
 		}
 		meshBuilder.End();
-		pMesh->Draw();
+		pMesh->DrawModulated( vecDiffuseModulation );
 	}
 }
 
@@ -1684,7 +1707,7 @@ class C_OP_RenderRope : public CParticleOperatorInstance
 			PARTICLE_ATTRIBUTE_TINT_RGB_MASK | PARTICLE_ATTRIBUTE_ALPHA_MASK;
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 	{
 		RenderRopeContext_t *pCtx = reinterpret_cast<RenderRopeContext_t *>( pContext );
 		pCtx->m_flRenderedRopeLength = false;
@@ -1717,8 +1740,8 @@ class C_OP_RenderRope : public CParticleOperatorInstance
 	}
 
 	virtual int GetParticlesToRender( CParticleCollection *pParticles, void *pContext, int nFirstParticle, int nRemainingVertices, int nRemainingIndices, int *pVertsUsed, int *pIndicesUsed ) const;
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
-	virtual void RenderSpriteCard( CParticleCollection *pParticles, void *pContext, IMaterial *pMaterial ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
+	virtual void RenderSpriteCard( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMaterial *pMaterial ) const;
 	virtual void RenderUnsorted( CParticleCollection *pParticles, void *pContext, IMatRenderContext *pRenderContext, CMeshBuilder &meshBuilder, int nVertexOffset, int nFirstParticle, int nParticleCount ) const;
 
 	// We connect neighboring particle instances to each other, so if the order isn't maintained we will have a particle that jumps
@@ -1809,12 +1832,19 @@ int C_OP_RenderRope::GetParticlesToRender( CParticleCollection *pParticles,
 			meshBuilder.TexCoord4fv( 3, vecP3.Base() );																			   \
 			meshBuilder.AdvanceVertex();
 
-void C_OP_RenderRope::RenderSpriteCard( CParticleCollection *pParticles, void *pContext, IMaterial *pMaterial ) const
+void C_OP_RenderRope::RenderSpriteCard( CParticleCollection *pParticles, const Vector4D &vecDiffuseModulation, void *pContext, IMaterial *pMaterial ) const
 {
 	int nParticles = pParticles->m_nActiveParticles; 
+	CCachedParticleBatches *pCachedBatches = NULL;
+	if ( g_pMaterialSystem->GetThreadMode() != MATERIAL_SINGLE_THREADED &&
+		 !pParticles->m_pDef->m_bShouldSort )
+	{
+		pParticles->ResetParticleCache();
+		pCachedBatches = pParticles->GetCachedParticleBatches();
+	}
 
 	int nSegmentsToRender = nParticles - 1;
-	if ( ! nSegmentsToRender )
+	if ( nSegmentsToRender <= 0 )
 		return;
 
 	CMatRenderContextPtr pRenderContext( g_pMaterialSystem );
@@ -1828,6 +1858,25 @@ void C_OP_RenderRope::RenderSpriteCard( CParticleCollection *pParticles, void *p
 
 	int nNumSegmentsPerBatch = min( ( nMaxVertices - 2 )/nNumVerticesPerSegment,
 									( nMaxIndices ) / nNumIndicesPerSegment );
+
+	if ( nNumSegmentsPerBatch <= 0 )
+		return;
+
+	// Reuse only complete cached ropes; larger ropes are regenerated safely.
+	int nBatchCount = ( nSegmentsToRender + nNumSegmentsPerBatch - 1 ) / nNumSegmentsPerBatch;
+	if ( nBatchCount > MAX_CACHED_PARTICLE_BATCHES )
+		pCachedBatches = NULL;
+	if ( pCachedBatches && pCachedBatches->GetCachedBatch( nBatchCount - 1 ) )
+	{
+		for ( int i = 0; i < nBatchCount; ++i )
+		{
+			IMesh *pCachedMesh = pRenderContext->GetDynamicMesh( true );
+			pCachedMesh->ReconstructFromCachedPerFrameMeshData( pCachedBatches->GetCachedBatch( i ) );
+			pCachedMesh->DrawModulated( vecDiffuseModulation );
+		}
+		return;
+	}
+	int nBatch = 0;
 
 	const float *pXYZ = pParticles->GetFloatAttributePtr( 
 		PARTICLE_ATTRIBUTE_XYZ, 0 );
@@ -1890,7 +1939,9 @@ void C_OP_RenderRope::RenderSpriteCard( CParticleCollection *pParticles, void *p
 		if ( ! nSegmentsAvailableInBuffer )
 		{
 			meshBuilder.End();
-			pMesh->Draw();
+			if ( pCachedBatches )
+				pCachedBatches->SetCachedBatch( nBatch++, pMesh->GetCachedPerFrameMeshData() );
+			pMesh->DrawModulated( vecDiffuseModulation );
 
 			g_pParticleSystemMgr->TallyParticlesRendered( 2 + nNumSegmentsIWillRenderPerBatch * nNumVerticesPerSegment * 3, nNumIndicesPerSegment * nNumSegmentsIWillRenderPerBatch * 3 );
 
@@ -1962,20 +2013,22 @@ void C_OP_RenderRope::RenderSpriteCard( CParticleCollection *pParticles, void *p
 
 
 	meshBuilder.End();
-	pMesh->Draw();
+	if ( pCachedBatches )
+		pCachedBatches->SetCachedBatch( nBatch, pMesh->GetCachedPerFrameMeshData() );
+	pMesh->DrawModulated( vecDiffuseModulation );
 }
 
 //-----------------------------------------------------------------------------
 // Renders particles, sorts them (?)
 //-----------------------------------------------------------------------------
-void C_OP_RenderRope::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderRope::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	// FIXME: What does this even mean?	Ropes can't really be sorted.
 
 	IMaterial *pMaterial = pParticles->m_pDef->GetMaterial();
 	if ( pMaterial->IsSpriteCard() )
 	{
-		RenderSpriteCard( pParticles, pContext, pMaterial );
+		RenderSpriteCard( pParticles, vecDiffuseModulation, pContext, pMaterial );
 		return;
 	}
 
@@ -2004,7 +2057,7 @@ void C_OP_RenderRope::Render( IMatRenderContext *pRenderContext, CParticleCollec
 		RenderUnsorted( pParticles, pContext, pRenderContext, meshBuilder, 0, nFirstParticle, nParticlesInBatch );
 
 		meshBuilder.End();
-		pMesh->Draw();
+		pMesh->DrawModulated( vecDiffuseModulation );
 
 		nFirstParticle += nParticlesInBatch;
 	}
@@ -2137,7 +2190,7 @@ class C_OP_RenderBlobs : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderBlobsContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 	{
 		C_OP_RenderBlobsContext_t *pCtx = reinterpret_cast<C_OP_RenderBlobsContext_t *>( pContext );
 		if ( VisibilityInputs.m_nCPin >= 0 )
@@ -2157,7 +2210,7 @@ class C_OP_RenderBlobs : public CParticleRenderOperatorInstance
 		return PARTICLE_ATTRIBUTE_XYZ_MASK;
 	}
 
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
 	
 	virtual bool IsBatchable() const
 	{
@@ -2174,7 +2227,7 @@ BEGIN_PARTICLE_RENDER_OPERATOR_UNPACK( C_OP_RenderBlobs )
 END_PARTICLE_OPERATOR_UNPACK( C_OP_RenderBlobs )
 
 
-void C_OP_RenderBlobs::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderBlobs::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	ImpTiler* tiler = ImpTilerFactory::factory->getTiler();
 	//RENDERER_CLASS* sweepRenderer = tiler->getRenderer();
@@ -2304,7 +2357,7 @@ class C_OP_RenderScreenVelocityRotate : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderScreenVelocityRotateContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 	{
 		C_OP_RenderScreenVelocityRotateContext_t *pCtx = reinterpret_cast<C_OP_RenderScreenVelocityRotateContext_t *>( pContext );
 		if ( VisibilityInputs.m_nCPin >= 0 )
@@ -2323,7 +2376,7 @@ class C_OP_RenderScreenVelocityRotate : public CParticleRenderOperatorInstance
 		return PARTICLE_ATTRIBUTE_XYZ_MASK | PARTICLE_ATTRIBUTE_PREV_XYZ_MASK | PARTICLE_ATTRIBUTE_ROTATION_MASK ;
 	}
 
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
 };
 
 DEFINE_PARTICLE_OPERATOR( C_OP_RenderScreenVelocityRotate, "render_screen_velocity_rotate", OPERATOR_SINGLETON );
@@ -2334,7 +2387,7 @@ BEGIN_PARTICLE_RENDER_OPERATOR_UNPACK( C_OP_RenderScreenVelocityRotate )
 END_PARTICLE_OPERATOR_UNPACK( C_OP_RenderScreenVelocityRotate )
 
 
-void C_OP_RenderScreenVelocityRotate::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderScreenVelocityRotate::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	C_OP_RenderScreenVelocityRotateContext_t *pCtx = reinterpret_cast<C_OP_RenderScreenVelocityRotateContext_t *>( pContext );
 	if ( pCtx->m_VisibilityData.m_bUseVisibility )
@@ -2415,7 +2468,7 @@ class C_OP_RenderModels : public CParticleRenderOperatorInstance
 		return false;
 	}
 	
-	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const;
+	virtual void Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const;
 
 	virtual void Precache( void );
 	char m_ActivityName[256];
@@ -2473,7 +2526,7 @@ static void AVectorPerpendicularToVector( Vector const &in, Vector *pvecOut )
 	pvecOut->NormalizeInPlace();
 }
 
-void C_OP_RenderModels::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext ) const
+void C_OP_RenderModels::Render( IMatRenderContext *pRenderContext, CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
 {
 	int nNumParticles;
 	CParticleVisibilityData visibilityData;

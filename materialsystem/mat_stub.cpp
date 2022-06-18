@@ -154,6 +154,10 @@ public:
 	{
 	}
 	
+	virtual void DrawModulated( const Vector4D &vecDiffuseModulation, int nFirstIndex = -1, int nIndexCount = 0 )
+	{
+	}
+
 	virtual void SetColorMesh( IMesh *pColorMesh, int nVertexOffset )
 	{
 	}
@@ -211,6 +215,9 @@ public:
 	{
 		return this;
 	}
+
+	virtual ICachedPerFrameMeshData *GetCachedPerFrameMeshData() { return NULL; }
+	virtual void ReconstructFromCachedPerFrameMeshData( ICachedPerFrameMeshData *pData ) {}
 };
 
 // We allocate this dynamically because it uses a bunch of memory and we don't want to
@@ -1098,6 +1105,8 @@ public:
 	{
 	}
 	virtual bool				IsInFrame() const { return false; }
+
+	virtual uint32				GetCurrentFrameCount() { return 0; }
 
 	// Bind a material is current for rendering.
 	virtual void				Bind( IMaterial *material, void *proxyData = 0 )
@@ -2089,7 +2098,7 @@ public:
 		return NULL;
 //		return GetDummyMesh();
 	}
-	virtual IIndexBuffer *		GetDynamicIndexBuffer( /*MaterialIndexFormat_t fmt, */bool buffered = true )
+	virtual IIndexBuffer *		GetDynamicIndexBuffer( )
 	{
 		Assert( 0 );
 		return NULL;

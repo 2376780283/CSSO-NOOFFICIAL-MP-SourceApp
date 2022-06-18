@@ -182,7 +182,7 @@ public:
 	virtual IIndexBuffer *CreateIndexBuffer( ShaderBufferType_t bufferType, MaterialIndexFormat_t fmt, int nIndexCount, const char *pBudgetGroup );
 	virtual void DestroyIndexBuffer( IIndexBuffer *pIndexBuffer );
 	virtual IVertexBuffer *GetDynamicVertexBuffer( int nStreamID, VertexFormat_t vertexFormat, bool bBuffered = true );
-	virtual IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered = true );
+	virtual IIndexBuffer *GetDynamicIndexBuffer();
 	virtual void SetHardwareGammaRamp( float fGamma, float fGammaTVRangeMin, float fGammaTVRangeMax, float fGammaTVExponent, bool bTVEnabled );
 	virtual void SpewDriverInfo() const;
 	virtual int GetCurrentAdapter() const;

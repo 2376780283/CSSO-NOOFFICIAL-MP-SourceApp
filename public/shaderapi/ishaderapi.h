@@ -527,6 +527,7 @@ public:
 
 	// Computes the vertex buffer pointers 
 	virtual void ComputeVertexDescription( unsigned char* pBuffer, VertexFormat_t vertexFormat, MeshDesc_t& desc ) const = 0;
+	virtual int VertexFormatSize( VertexFormat_t vertexFormat ) const = 0;
 
 	virtual bool SupportsShadowDepthTextures( void ) = 0;
 

@@ -151,7 +151,7 @@ void CVertexBufferBase::PrintVertexFormat( VertexFormat_t vertexFormat )
 void CVertexBufferBase::ComputeVertexDescription( unsigned char *pBuffer, 
 	VertexFormat_t vertexFormat, VertexDesc_t &desc )
 {
-	ComputeVertexDesc( pBuffer, vertexFormat, desc );
+	ComputeVertexDesc< false >( pBuffer, vertexFormat, desc );
 }
 
 
@@ -160,10 +160,8 @@ void CVertexBufferBase::ComputeVertexDescription( unsigned char *pBuffer,
 //-----------------------------------------------------------------------------
 int CVertexBufferBase::VertexFormatSize( VertexFormat_t vertexFormat )
 {
-	// FIXME: We could make this much faster
-	MeshDesc_t temp;
-	ComputeVertexDescription( 0, vertexFormat, temp );
-	return temp.m_ActualVertexSize;
+	VertexDesc_t desc;
+	return ComputeVertexDesc< true >( NULL, vertexFormat, desc );
 }
 
 

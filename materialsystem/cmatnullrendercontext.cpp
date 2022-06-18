@@ -665,6 +665,12 @@ public:
 		return true;
 	}
 
+	bool OnDrawMeshModulated(IMesh *, const Vector4D&, int,int)
+	{
+		AssertMsg( 0, "CMatNullRenderContext only provides base features, not a stub (right now)" );
+		return true;
+	}
+
 	bool OnSetFlexMesh(IMesh *,IMesh *,int)
 	{
 		AssertMsg( 0, "CMatNullRenderContext only provides base features, not a stub (right now)" );
@@ -761,7 +767,7 @@ public:
 		Assert( 0 );
 		return NULL;
 	}
-	IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBufferedtrue )
+	IIndexBuffer *GetDynamicIndexBuffer( )
 	{
 		Assert( 0 );
 		return NULL;

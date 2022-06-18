@@ -121,6 +121,8 @@ public:
 	// Gets texture handles for ITextures
 	virtual ShaderAPITextureHandle_t GetShaderAPITextureBindHandle( ITexture *pTexture, int nFrame, int nTextureChannel ) = 0;
 
+	virtual bool OnDrawMeshModulated( IMesh *pMesh, const Vector4D &diffuseModulation, int firstIndex, int numIndices ) = 0;
+
 	// received an event while not in owning thread, handle this outside
 	virtual void OnThreadEvent( uint32 threadEvent ) = 0;
 

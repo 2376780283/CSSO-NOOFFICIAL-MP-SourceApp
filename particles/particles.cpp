@@ -382,6 +382,8 @@ void CParticleSystemDefinition::Precache()
 	m_bIsPrecached = true;
 #ifndef SWDS
 	m_Material.Init( MaterialName(), TEXTURE_GROUP_OTHER, true );
+	m_Material->GetColorModulation( &m_vecMaterialModulation[0], &m_vecMaterialModulation[1], &m_vecMaterialModulation[2] );
+	m_vecMaterialModulation[3] = m_Material->GetAlphaModulation();
 #endif
 
     // call the precache method of the renderers in case they need assets
@@ -962,11 +964,13 @@ CParticleCollection::CParticleCollection( )
 	m_pParent = NULL;
 	m_LocalLighting = Color(255, 255, 255, 255);
 	m_LocalLightingCP = -1;
+	m_pCachedParticleBatches = NULL;
 	
 }
 
 CParticleCollection::~CParticleCollection( void )
 {
+	delete m_pCachedParticleBatches;
 	UnlinkFromDefList();
 
 	m_Children.Purge();
@@ -1713,7 +1717,30 @@ void CParticleCollection::Restart()
 //-----------------------------------------------------------------------------
 // Main entry point for rendering
 //-----------------------------------------------------------------------------
-void CParticleCollection::Render( IMatRenderContext *pRenderContext, bool bTranslucentOnly, void *pCameraObject )
+void CParticleCollection::ResetParticleCache()
+{
+	if ( m_pCachedParticleBatches )
+	{
+		uint32 nFrame = g_pMaterialSystem->GetCurrentFrameCount();
+		if ( m_pCachedParticleBatches->m_nLastValidParticleCacheFrame != nFrame )
+		{
+			m_pCachedParticleBatches->ClearBatches();
+			m_pCachedParticleBatches->m_nLastValidParticleCacheFrame = nFrame;
+		}
+	}
+}
+
+CCachedParticleBatches *CParticleCollection::GetCachedParticleBatches()
+{
+	if ( !m_pCachedParticleBatches )
+	{
+		m_pCachedParticleBatches = new CCachedParticleBatches();
+		m_pCachedParticleBatches->m_nLastValidParticleCacheFrame = g_pMaterialSystem->GetCurrentFrameCount();
+	}
+	return m_pCachedParticleBatches;
+}
+
+void CParticleCollection::Render( IMatRenderContext *pRenderContext, bool bTranslucentOnly, void *pCameraObject, const Vector4D &vecDiffuseModulation )
 {
 	if ( !IsValid() )
 		return;
@@ -1722,7 +1749,9 @@ void CParticleCollection::Render( IMatRenderContext *pRenderContext, bool bTrans
 
 	if ( m_nActiveParticles != 0 )
 	{
-		if ( !bTranslucentOnly || m_pDef->GetMaterial()->IsTranslucent() )
+		Vector4D vecActualModulation;
+		Vector4DMultiply( vecDiffuseModulation, m_pDef->m_vecMaterialModulation, vecActualModulation );
+		if ( !bTranslucentOnly || m_pDef->GetMaterial()->IsTranslucent() || vecActualModulation[3] != 1.0f )
 		{
 			int nCount = m_pDef->m_Renderers.Count();
 			for( int i = 0; i < nCount; i++ )
@@ -1737,7 +1766,7 @@ void CParticleCollection::Render( IMatRenderContext *pRenderContext, bool bTrans
 // 					pRenderContext->LoadIdentity();
 // 					pRenderContext->Ortho( -100, -100, 100, 100, -100, 100 );
 					m_pDef->m_Renderers[i]->Render(
-						pRenderContext, this, m_pOperatorContextData + m_pDef->m_nRenderersCtxOffsets[i] );
+						pRenderContext, this, m_pOperatorContextData + m_pDef->m_nRenderersCtxOffsets[i], vecActualModulation );
 // 					pRenderContext->MatrixMode( MATERIAL_VIEW );
 // 					pRenderContext->PopMatrix();
 // 					pRenderContext->MatrixMode( MATERIAL_PROJECTION );
@@ -1750,7 +1779,7 @@ void CParticleCollection::Render( IMatRenderContext *pRenderContext, bool bTrans
 	// let children render
 	for( CParticleCollection *p = m_Children.m_pHead; p; p = p->m_pNext )
 	{
-		p->Render( pRenderContext, bTranslucentOnly, pCameraObject );
+		p->Render( pRenderContext, bTranslucentOnly, pCameraObject, vecDiffuseModulation );
 	}
 
 	// Visualize specific ops for debugging/editing

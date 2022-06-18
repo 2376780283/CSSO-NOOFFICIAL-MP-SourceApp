@@ -309,6 +309,12 @@ public:
 	virtual void ValidateData( int nIndexCount, const IndexDesc_t &desc ) = 0;
 };
 
+//-----------------------------------------------------------------------------
+abstract_class ICachedPerFrameMeshData
+{
+public:
+	virtual void Free() = 0;
+};
 
 //-----------------------------------------------------------------------------
 // Interface to the mesh - needs to contain an IVertexBuffer and an IIndexBuffer to emulate old mesh behavior
@@ -363,7 +369,15 @@ public:
 
 	virtual void MarkAsDrawn() = 0;
 
-	virtual unsigned ComputeMemoryUsed() = 0;
+	// NOTE: I chose to create this method strictly because it's 2 days to code lock
+	// and I could use the DrawInstances technique without a larger code change
+	// Draws the mesh w/ modulation.
+	virtual void DrawModulated( const Vector4D &diffuseModulation, int nFirstIndex = -1, int nIndexCount = 0 ) = 0;
+
+	virtual unsigned int ComputeMemoryUsed() = 0;
+
+	virtual ICachedPerFrameMeshData *GetCachedPerFrameMeshData() = 0;
+	virtual void ReconstructFromCachedPerFrameMeshData( ICachedPerFrameMeshData *pData ) = 0;
 };
 
 

@@ -2677,6 +2677,14 @@ bool CMaterialSystem::OnDrawMesh( IMesh *pMesh, CPrimList *pLists, int nLists )
 	return GetRenderContextInternal()->OnDrawMesh( pMesh, pLists, nLists );
 }
 
+bool CMaterialSystem::OnDrawMeshModulated( IMesh *pMesh, const Vector4D &diffuseModulation, int firstIndex, int numIndices )
+{
+	if ( IsInStubMode() )
+		return false;
+
+	return GetRenderContextInternal()->OnDrawMeshModulated( pMesh, diffuseModulation, firstIndex, numIndices );
+}
+
 void CMaterialSystem::OnThreadEvent( uint32 threadEvent )
 {
 	m_threadEvents.AddToTail( threadEvent );
@@ -3878,6 +3886,11 @@ bool CMaterialSystem::IsInStubMode()
 void CMaterialSystem::Flush( bool flushHardware )
 {
 	GetRenderContextInternal()->Flush( flushHardware );
+}
+
+uint32 CMaterialSystem::GetCurrentFrameCount()
+{
+	return g_FrameNum;
 }
 
 

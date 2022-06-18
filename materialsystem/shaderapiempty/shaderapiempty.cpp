@@ -60,6 +60,7 @@ public:
 	 
 	// Draws the entire mesh
 	void Draw(int firstIndex, int numIndices);
+	void DrawModulated( const Vector4D &vecDiffuseModulation, int firstIndex, int numIndices) {}
 
 	void Draw(CPrimList *pPrims, int nPrims);
 
@@ -97,6 +98,9 @@ public:
 	virtual void MarkAsDrawn() {}
 
 	virtual unsigned ComputeMemoryUsed() { return 0; }
+
+	virtual ICachedPerFrameMeshData *GetCachedPerFrameMeshData() { return NULL; }
+	virtual void ReconstructFromCachedPerFrameMeshData( ICachedPerFrameMeshData *pData ) {}
 
 	virtual VertexFormat_t GetVertexFormat() const { return VERTEX_POSITION; }
 
@@ -306,7 +310,7 @@ public:
 	virtual IIndexBuffer *CreateIndexBuffer( ShaderBufferType_t bufferType, MaterialIndexFormat_t fmt, int nIndexCount, const char *pBudgetGroup );
 	virtual void DestroyIndexBuffer( IIndexBuffer *pIndexBuffer );
 	virtual IVertexBuffer *GetDynamicVertexBuffer( int streamID, VertexFormat_t vertexFormat, bool bBuffered );
-	virtual IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered );
+	virtual IIndexBuffer *GetDynamicIndexBuffer();
 	virtual void SetHardwareGammaRamp( float fGamma, float fGammaTVRangeMin, float fGammaTVRangeMax, float fGammaTVExponent, bool bTVEnabled ) {}
 	virtual void EnableNonInteractiveMode( MaterialNonInteractiveMode_t mode, ShaderNonInteractiveInfo_t *pInfo ) {}
 	virtual void RefreshFrontBufferNonInteractive( ) {}
@@ -1151,6 +1155,7 @@ public:
 	virtual void SetPIXMarker( unsigned long color, const char *szName ) {}
 
 	virtual void ComputeVertexDescription( unsigned char* pBuffer, VertexFormat_t vertexFormat, MeshDesc_t& desc ) const {}
+	virtual int VertexFormatSize( VertexFormat_t vertexFormat ) const { return 0; }
 
 	virtual bool SupportsShadowDepthTextures() { return false; }
 
@@ -1495,7 +1500,7 @@ IVertexBuffer *CShaderDeviceEmpty::GetDynamicVertexBuffer( int streamID, VertexF
 	return &m_DynamicMesh;
 }
 
-IIndexBuffer *CShaderDeviceEmpty::GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered )
+IIndexBuffer *CShaderDeviceEmpty::GetDynamicIndexBuffer()
 {
 	return &m_Mesh;
 }

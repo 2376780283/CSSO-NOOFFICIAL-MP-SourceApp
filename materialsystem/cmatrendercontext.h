@@ -300,7 +300,7 @@ public:
 	DELEGATE_TO_OBJECT_1V(					DestroyVertexBuffer, IVertexBuffer *, g_pShaderDevice );
 	DELEGATE_TO_OBJECT_1V(					DestroyIndexBuffer, IIndexBuffer *, g_pShaderDevice );
 	DELEGATE_TO_OBJECT_3( IVertexBuffer *, 	GetDynamicVertexBuffer, int, VertexFormat_t, bool, g_pShaderDevice );
-	DELEGATE_TO_OBJECT_2( IIndexBuffer *, 	GetDynamicIndexBuffer, MaterialIndexFormat_t, bool, g_pShaderDevice );
+	DELEGATE_TO_OBJECT_0( IIndexBuffer *, 	GetDynamicIndexBuffer, g_pShaderDevice );
 	DELEGATE_TO_OBJECT_7V(					BindVertexBuffer, int, IVertexBuffer *, int, int, int, VertexFormat_t, int, g_pShaderAPI );
 	DELEGATE_TO_OBJECT_2V(					BindIndexBuffer, IIndexBuffer *, int, g_pShaderAPI );
 	DELEGATE_TO_OBJECT_3V(					Draw,  MaterialPrimitiveType_t, int, int, g_pShaderAPI );
@@ -522,6 +522,7 @@ public:
 
 	bool									OnDrawMesh( IMesh *pMesh, int firstIndex, int numIndices );
 	bool									OnDrawMesh( IMesh *pMesh, CPrimList *pLists, int nLists );
+	bool									OnDrawMeshModulated( IMesh *pMesh, const Vector4D &diffuseModulation, int firstIndex, int numIndices );
 	bool									OnSetFlexMesh( IMesh *pStaticMesh, IMesh *pMesh, int nVertexOffsetInBytes ) { return true; }
 	bool									OnSetColorMesh( IMesh *pStaticMesh, IMesh *pMesh, int nVertexOffsetInBytes ) { return true; }
 	bool									OnSetPrimitiveType( IMesh *pMesh, MaterialPrimitiveType_t type ) { return true; }

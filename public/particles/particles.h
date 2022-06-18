@@ -14,6 +14,7 @@
 #include "mathlib/vector.h"
 #include "mathlib/ssemath.h"
 #include "materialsystem/imaterialsystem.h"
+#include "materialsystem/imesh.h"
 #include "dmxloader/dmxelement.h"
 #include "tier1/utlintrusivelist.h"
 #include "vstdlib/random.h"
@@ -633,7 +634,7 @@ public:
 
 	// a renderer overrides this
 	virtual void Render( IMatRenderContext *pRenderContext, 
-						 CParticleCollection *pParticles, void *pContext ) const
+						 CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation = Vector4D( 1, 1, 1, 1 ) ) const
 	{
 	}
 
@@ -1078,6 +1079,61 @@ struct CParticleSIMDTransformation
 // CParticleCollection
 //
 //-----------------------------------------------------------------------------
+#define MAX_CACHED_PARTICLE_BATCHES 8
+class CCachedParticleBatches
+{
+public:
+	uint32 m_nLastValidParticleCacheFrame;
+	int m_nCachedRenderListCount;
+	ICachedPerFrameMeshData *m_pCachedBatches[ MAX_CACHED_PARTICLE_BATCHES ];
+
+	CCachedParticleBatches() : m_nLastValidParticleCacheFrame( (uint32)-1 ), m_nCachedRenderListCount( 0 )
+	{
+		Q_memset( m_pCachedBatches, 0, sizeof( ICachedPerFrameMeshData* ) * MAX_CACHED_PARTICLE_BATCHES );
+	}
+	~CCachedParticleBatches()
+	{
+		ClearBatches();
+	}
+
+	FORCEINLINE void ClearBatches()
+	{
+		m_nCachedRenderListCount = 0;
+		for ( int i=0; i<MAX_CACHED_PARTICLE_BATCHES; ++i )
+		{
+			if ( m_pCachedBatches[ i ] )
+				 m_pCachedBatches[ i ]->Free();
+			m_pCachedBatches[ i ] = NULL;
+		}
+	}
+
+	FORCEINLINE void SetCachedBatch( int nBatch, ICachedPerFrameMeshData* pBatch )
+	{
+		if ( nBatch >= MAX_CACHED_PARTICLE_BATCHES )
+			return;
+
+		m_pCachedBatches[ nBatch ] = pBatch;
+	}
+
+	FORCEINLINE ICachedPerFrameMeshData *GetCachedBatch( int nBatch )
+	{
+		if ( nBatch >= MAX_CACHED_PARTICLE_BATCHES )
+			return NULL;
+
+		return m_pCachedBatches[ nBatch ];
+	}
+
+	FORCEINLINE void SetCachedRenderListCount( int nParticleCount )
+	{
+		m_nCachedRenderListCount = nParticleCount;
+	}
+
+	FORCEINLINE int GetCachedRenderListCount()
+	{
+		return m_nCachedRenderListCount;
+	}
+};
+
 class CParticleCollection
 {
 public:
@@ -1128,7 +1184,7 @@ public:
 	void SkipToTime( float t );
 
 	// the camera objetc may be compared for equality against control point objects
-	void Render( IMatRenderContext *pRenderContext, bool bTranslucentOnly = false, void *pCameraObject = NULL );
+	void Render( IMatRenderContext *pRenderContext, bool bTranslucentOnly = false, void *pCameraObject = NULL, const Vector4D &vecDiffuseModulation = Vector4D( 1, 1, 1, 1 ) );
 
 	bool IsValid( void ) const;
 	const char *GetName() const;
@@ -1247,6 +1303,9 @@ public:
 
 	// Used by particle system definitions to manage particle collection lists
 	void UnlinkFromDefList( );
+
+	void ResetParticleCache();
+	CCachedParticleBatches *GetCachedParticleBatches();
 
 	CParticleCollection *GetNextCollectionUsingSameDef() { return m_pNextDef; }
 
@@ -1435,6 +1494,7 @@ private:
 
 
 	// For debugging
+	CCachedParticleBatches *m_pCachedParticleBatches;
 	CParticleOperatorInstance *m_pRenderOp;
 	friend class CParticleSystemMgr;
 	friend class CParticleOperatorInstance;
@@ -2105,6 +2165,7 @@ private:
 	Vector m_BoundingBoxMax;
 	char m_pszMaterialName[MAX_PATH];
 	CMaterialReference m_Material;
+	Vector4D m_vecMaterialModulation;
 	CParticleCollection *m_pFirstCollection;
 	char m_pszCullReplacementName[128];
 	float m_flCullRadius;
@@ -2181,6 +2242,7 @@ public:
 //-----------------------------------------------------------------------------
 inline CParticleSystemDefinition::CParticleSystemDefinition( void )
 {
+	m_vecMaterialModulation.Init( 1, 1, 1, 1 );
 	m_nControlPointReadMask = 0;
 	m_nInitialAttributeReadMask = 0;
 	m_nPerParticleInitializedAttributeMask = 0;

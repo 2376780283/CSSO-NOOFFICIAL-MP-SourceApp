@@ -26,6 +26,7 @@
 
 class CMaterialSystem;
 class CMatQueuedMesh;
+class CMatQueuedIndexBuffer;
 class CPrimList;
 
 //-----------------------------------------------------------------------------
@@ -132,6 +133,7 @@ public:
 
 	bool									OnDrawMesh( IMesh *pMesh, int firstIndex, int numIndices );
 	bool									OnDrawMesh( IMesh *pMesh, CPrimList *pLists, int nLists );
+	bool									OnDrawMeshModulated( IMesh *pMesh, const Vector4D &diffuseModulation, int firstIndex, int numIndices );
 	bool									OnSetFlexMesh( IMesh *pStaticMesh, IMesh *pMesh, int nVertexOffsetInBytes );
 	bool									OnSetColorMesh( IMesh *pStaticMesh, IMesh *pMesh, int nVertexOffsetInBytes );
 	bool									OnSetPrimitiveType( IMesh *pMesh, MaterialPrimitiveType_t type );
@@ -219,7 +221,7 @@ public:
 	DELEGATE_TO_OBJECT_1V(					DestroyVertexBuffer, IVertexBuffer *, m_pHardwareContext );
 	DELEGATE_TO_OBJECT_1V(					DestroyIndexBuffer, IIndexBuffer *, m_pHardwareContext );
 	DELEGATE_TO_OBJECT_3( IVertexBuffer *, 	GetDynamicVertexBuffer, int, VertexFormat_t, bool, m_pHardwareContext );
-	DELEGATE_TO_OBJECT_2( IIndexBuffer *, 	GetDynamicIndexBuffer, MaterialIndexFormat_t, bool, m_pHardwareContext );
+	IIndexBuffer * 							GetDynamicIndexBuffer( );
 	DELEGATE_TO_OBJECT_7V(					BindVertexBuffer, int, IVertexBuffer *, int, int, int, VertexFormat_t, int, m_pHardwareContext );
 	DELEGATE_TO_OBJECT_2V(					BindIndexBuffer, IIndexBuffer *, int, m_pHardwareContext );
 	DELEGATE_TO_OBJECT_3V(					Draw, MaterialPrimitiveType_t, int, int, m_pHardwareContext );
@@ -564,7 +566,7 @@ public:
 		return m_LastSetToneMapScale;
 	}
 
-	void DeferredBeginBatch( uint16 *pIndexData, int nIndices );
+	void DeferredBeginBatch( );
 	void DeferredDrawPrimList( IMesh *pMesh, CPrimList *pLists, int nLists );
 	void DeferredSetFlexMesh( IMesh *pStaticMesh, int nVertexOffsetInBytes );
 
@@ -582,14 +584,12 @@ public:
 	//--------------------------------------------------------
 	// Memory allocation calls for queued mesh, et. al.
 	//--------------------------------------------------------
-	byte *AllocVertices( int nVerts, int nVertexSize );
-	uint16 *AllocIndices( int nIndices );
-	CPrimList *AllocPrimLists( int nPrimLists );
-	byte *ReallocVertices( byte *pVerts, int nVertsOld, int nVertsNew, int nVertexSize );
-	uint16 *ReallocIndices( uint16 *pIndices, int nIndicesOld, int nIndicesNew );
+	byte *AllocVertices( int nVerts, int nVertexSize, bool *pUsingExternalMemory );
+	byte *AllocIndices( int nIndices, int nIndexSize, bool *pUsingExternalMemory );
+	byte *ReallocVertices( byte *pVerts, int nVertsOld, int nVertsNew, int nVertexSize, bool bExternalMemory );
+	byte *ReallocIndices( byte *pIndices, int nIndicesOld, int nIndicesNew, int nIndexSize, bool bExternalMemory );
 	void FreeVertices( byte *pVerts, int nVerts, int nVertexSize );
-	void FreeIndices( uint16 *pIndices, int nIndices );
-	void FreePrimLists( CPrimList * );
+	void FreeIndices( byte *pIndices, int nIndices, int nIndexSize );
 
 	//--------------------------------------------------------
 	// debug logging - no-op in queued context
@@ -605,11 +605,22 @@ public:
 private:
 	void QueueMatrixSync();
 
+	FORCEINLINE CMemoryStack &Vertices()
+	{
+		return m_Vertices;
+	}
+	FORCEINLINE CMemoryStack &Indices()
+	{
+		return m_Indices;
+	}
+
 	//friend class CMatQueuedMesh;
 	friend class CCallQueueExternal;
 
 	CMatCallQueue m_queue;
 	CMatQueuedMesh *m_pQueuedMesh;
+	CMatQueuedMesh *m_pQueuedFlexMesh;
+	CMatQueuedIndexBuffer *m_pQueuedIndexBuffer;
 
 	CMatRenderContextBase *m_pHardwareContext;
 

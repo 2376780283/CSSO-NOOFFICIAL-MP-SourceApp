@@ -240,6 +240,7 @@ public:
 	virtual bool							IsInFrame( ) const;
 	void									Flush( bool flushHardware = false );
 	void									SwapBuffers();
+	uint32									GetCurrentFrameCount();
 
 	// Flushes managed textures from the texture cacher
 	void									EvictManagedResources();
@@ -493,6 +494,7 @@ public:
 	
 	bool									OnDrawMesh( IMesh *pMesh, int firstIndex, int numIndices );
 	bool									OnDrawMesh( IMesh *pMesh, CPrimList *pLists, int nLists );
+	bool									OnDrawMeshModulated( IMesh *pMesh, const Vector4D &diffuseModulation, int firstIndex, int numIndices );
 	DELEGATE_TO_OBJECT_3( bool,				OnSetFlexMesh, IMesh *, IMesh *, int, GetRenderContextInternal() );
 	DELEGATE_TO_OBJECT_3( bool,				OnSetColorMesh, IMesh *, IMesh *, int, GetRenderContextInternal() );
 	DELEGATE_TO_OBJECT_2( bool,				OnSetPrimitiveType, IMesh *, MaterialPrimitiveType_t, GetRenderContextInternal() );

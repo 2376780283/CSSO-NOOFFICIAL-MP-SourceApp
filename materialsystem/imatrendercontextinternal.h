@@ -45,6 +45,7 @@ public:
 
 	virtual bool OnDrawMesh( IMesh *pMesh, int firstIndex, int numIndices ) = 0;
 	virtual bool OnDrawMesh( IMesh *pMesh, CPrimList *pLists, int nLists ) = 0;
+	virtual bool OnDrawMeshModulated( IMesh *pMesh, const Vector4D &diffuseModulation, int firstIndex, int numIndices ) = 0;
 	virtual bool OnSetFlexMesh( IMesh *pStaticMesh, IMesh *pMesh, int nVertexOffsetInBytes ) = 0;
 	virtual bool OnSetColorMesh( IMesh *pStaticMesh, IMesh *pMesh, int nVertexOffsetInBytes ) = 0;
 	virtual bool OnSetPrimitiveType( IMesh *pMesh, MaterialPrimitiveType_t type ) = 0;

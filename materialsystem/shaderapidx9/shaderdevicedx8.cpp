@@ -3663,10 +3663,10 @@ IVertexBuffer *CShaderDeviceDx8::GetDynamicVertexBuffer( int streamID, VertexFor
 	return MeshMgr()->GetDynamicVertexBuffer( streamID, vertexFormat, bBuffered );
 }
 
-IIndexBuffer *CShaderDeviceDx8::GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered )
+IIndexBuffer *CShaderDeviceDx8::GetDynamicIndexBuffer( )
 {
 	LOCK_SHADERAPI();
-	return MeshMgr()->GetDynamicIndexBuffer( fmt, bBuffered );
+	return MeshMgr()->GetDynamicIndexBuffer( );
 }
 
 #ifdef _X360

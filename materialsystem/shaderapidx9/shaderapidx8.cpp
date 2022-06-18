@@ -1769,6 +1769,11 @@ private:
 		return MeshMgr()->ComputeVertexDescription( pBuffer, vertexFormat, desc );
 	}
 
+	int VertexFormatSize( VertexFormat_t vertexFormat ) const
+	{
+		return MeshMgr()->VertexFormatSize( vertexFormat );
+	}
+
 	// Reports support for shadow depth texturing
 	bool SupportsShadowDepthTextures( void );
 	bool SupportsFetch4( void );

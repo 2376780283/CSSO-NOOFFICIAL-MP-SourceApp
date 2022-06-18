@@ -55,7 +55,7 @@ public:
 	virtual void DestroyIndexBuffer( IIndexBuffer * ) = 0;
 	// Do we need to specify the stream here in the case of locking multiple dynamic VBs on different streams?
 	virtual IVertexBuffer *GetDynamicVertexBuffer( int streamID, VertexFormat_t vertexFormat, bool bBuffered = true ) = 0;
-	virtual IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered = true ) = 0;
+	virtual IIndexBuffer *GetDynamicIndexBuffer( ) = 0;
 	virtual void BindVertexBuffer( int streamID, IVertexBuffer *pVertexBuffer, int nOffsetInBytes, int nFirstVertex, int nVertexCount, VertexFormat_t fmt, int nRepetitions = 1 ) = 0;
 	virtual void BindIndexBuffer( IIndexBuffer *pIndexBuffer, int nOffsetInBytes ) = 0;
 	virtual void Draw( MaterialPrimitiveType_t primitiveType, int nFirstIndex, int nIndexCount ) = 0;
@@ -89,8 +89,9 @@ public:
 
 	virtual void ComputeVertexDescription( unsigned char* pBuffer, VertexFormat_t vertexFormat, MeshDesc_t& desc ) const = 0;
 
+	virtual int VertexFormatSize( VertexFormat_t vertexFormat ) const = 0;
+
 	virtual IVertexBuffer *GetDynamicVertexBuffer( IMaterial *pMaterial, bool buffered = true ) = 0;
-	virtual IIndexBuffer *GetDynamicIndexBuffer( IMaterial *pMaterial, bool buffered = true ) = 0;
 
 	virtual void MarkUnusedVertexFields( unsigned int nFlags, int nTexCoordCount, bool *pUnusedTexCoords ) = 0;
 };

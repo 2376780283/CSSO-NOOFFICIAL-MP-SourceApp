@@ -284,7 +284,7 @@ public:
 	bool HasFlexMesh( ) const { return false; }
 	
 	// Draws the mesh
-	void DrawMesh( );
+	void DrawMesh( const Vector4D *pVecDiffuseModulation );
 
 	// Begins a pass
 	void BeginPass( );
@@ -400,8 +400,9 @@ public:
 
 	// Draws the mesh
 	void Draw( int nFirstIndex, int nIndexCount );
+	virtual void DrawModulated( const Vector4D &diffuseModulation, int nFirstIndex, int nIndexCount );
 	void Draw( CPrimList *pLists, int nLists );
-	void DrawInternal( CPrimList *pLists, int nLists );
+	void DrawInternal( const Vector4D *pDiffuseModulation, CPrimList *pLists, int nLists );
 
 	// Draws a single pass
 	void RenderPass();
@@ -534,6 +535,7 @@ public:
 
 	// Draws it						   
 	void Draw( int nFirstIndex, int nIndexCount );
+	virtual void DrawModulated( const Vector4D &diffuseModulation, int nFirstIndex, int nIndexCount );
 	void MarkAsDrawn() { m_HasDrawn = true; }
 	// Simply draws what's been buffered up immediately, without state change 
 	void DrawSinglePassImmediately();
@@ -546,6 +548,8 @@ public:
 private:
 	// Resets buffering state
 	void ResetVertexAndIndexCounts();
+
+	void DrawInternal( const Vector4D *pVecDiffuseModulation, int nFirstIndex, int nIndexCount );
 
 	// Buffer Id
 	int m_nBufferId;
@@ -611,6 +615,7 @@ public:
 
 	// Draws the entire beast
 	void Draw( int nFirstIndex, int nIndexCount );
+	virtual void DrawModulated( const Vector4D &diffuseModulation, int nFirstIndex, int nIndexCount );
 
 	virtual void CopyToMeshBuilder( 
 		int iStartVert,		// Which vertices to copy.
@@ -623,6 +628,7 @@ private:
 	// Selection mode 
 	void TestSelection( );
 	void ClipTriangle( D3DXVECTOR3 **ppVert, float zNear, D3DXMATRIX &proj );
+	void DrawInternal( const Vector4D *pVecDiffuseModulation, int nFirstIndex, int nIndexCount );
 
 	CDynamicMeshDX8 *GetDynamicMesh();
 
@@ -695,99 +701,6 @@ private:
 #endif
 };
 #endif
-//-----------------------------------------------------------------------------
-// This is a version that buffers up vertex data so we can blast through it later
-//-----------------------------------------------------------------------------
-class CBufferedMeshDX8 : public CBaseMeshDX8
-{
-public:
-	// constructor, destructor
-	CBufferedMeshDX8();
-	virtual ~CBufferedMeshDX8();
-
-	// checks to see if it was rendered..
-	void ResetRendered();
-	bool WasNotRendered() const;
-
-	// Sets the mesh we're really going to draw into
-	void SetMesh( CBaseMeshDX8* pMesh );
-	const CBaseMeshDX8* GetMesh() const { return m_pMesh; }
-
-	// Spews the mesh data
-	virtual void Spew( int nVertexCount, int nIndexCount, const MeshDesc_t &spewDesc );
-
-	// Sets the vertex format
-	virtual void SetVertexFormat( VertexFormat_t format );
-	virtual VertexFormat_t GetVertexFormat() const;
-
-	// Sets the morph format
-	virtual void SetMorphFormat( MorphFormat_t format );
-
-	// Sets the material
-	void SetMaterial( IMaterial *pMaterial );
-
-	// returns the number of indices (should never be called!)
-	virtual int IndexCount() const { Assert(0); return 0; }
-	virtual MaterialIndexFormat_t IndexFormat() const { Assert(0); return MATERIAL_INDEX_FORMAT_16BIT; }
-	virtual bool IsDynamic() const { Assert(0); return true; }
-	virtual void BeginCastBuffer( MaterialIndexFormat_t format ) { Assert(0); }
-	virtual void EndCastBuffer( ) { Assert(0); }
-	virtual int GetRoomRemaining() const { Assert(0); return 0; }
-
-	// Locks the mesh
-	void LockMesh( int nVertexCount, int nIndexCount, MeshDesc_t& desc );
-	void UnlockMesh( int nVertexCount, int nIndexCount, MeshDesc_t& desc );
-
-	// Sets the primitive type
-	void SetPrimitiveType( MaterialPrimitiveType_t type );
-	MaterialPrimitiveType_t GetPrimitiveType( ) const;
-
-	void ValidateData( int nVertexCount, int nIndexCount, const MeshDesc_t & spewDesc );
-
-	virtual void HandleLateCreation( ) 
-	{ 
-		if ( m_pMesh ) 
-		{
-			m_pMesh->HandleLateCreation(); 
-		}
-	}
-
-	// Draws it
-	void Draw( int nFirstIndex, int nIndexCount );
-
-	// Renders a pass
-	void RenderPass();
-
-	// Flushes queued data
-	void Flush( );
-
-	void SetFlexMesh( IMesh *pMesh, int nVertexOffsetInBytes );
-
-private:
-	// The actual mesh we need to render....
-	CBaseMeshDX8* m_pMesh;
-	
-	// The index of the last vertex (for tristrip fixup)
-	unsigned short m_LastIndex;
-
-	// Extra padding indices for tristrips
-	unsigned short m_ExtraIndices;
-
-	// Am I currently flushing?
-	bool m_IsFlushing;
-
-	// has the dynamic mesh been rendered?
-	bool m_WasRendered;
-
-	// Do I need to flush?
-	bool m_FlushNeeded;
-
-#ifdef DEBUG_BUFFERED_MESHES
-	// for debugging only
-	bool m_BufferedStateSet;
-	BufferedState_t m_BufferedState;
-#endif
-};
 
 
 //-----------------------------------------------------------------------------
@@ -812,7 +725,7 @@ public:
 	void DestroyVertexBuffers();
 
 	// Flushes the dynamic mesh
-	void Flush();
+	void Flush() {}
 
 	// Flushes the vertex buffers
 	void DiscardVertexBuffers();
@@ -835,7 +748,7 @@ public:
 	void DestroyIndexBuffer( IIndexBuffer * );
 	// Do we need to specify the stream here in the case of locking multiple dynamic VBs on different streams?
 	IVertexBuffer *GetDynamicVertexBuffer( int streamID, VertexFormat_t vertexFormat, bool bBuffered = true );
-	IIndexBuffer *GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered = true );
+	IIndexBuffer *GetDynamicIndexBuffer( );
 	void BindVertexBuffer( int streamID, IVertexBuffer *pVertexBuffer, int nOffsetInBytes, int nFirstVertex, int nVertexCount, VertexFormat_t fmt, int nRepetitions = 1 );
 	void BindIndexBuffer( IIndexBuffer *pIndexBuffer, int nOffsetInBytes );
 	void Draw( MaterialPrimitiveType_t primitiveType, int nFirstIndex, int nIndexCount );
@@ -863,11 +776,10 @@ public:
 
 	// Returns a vertex buffer appropriate for the flags
 	CVertexBuffer *FindOrCreateVertexBuffer( int nDynamicBufferId, VertexFormat_t fmt );
-	CIndexBuffer *GetDynamicIndexBuffer();
+	CIndexBuffer *GetDynamicIndexBufferInternal();
 
 	// Is the mesh dynamic?
 	bool IsDynamicMesh( IMesh *pMesh ) const;
-	bool IsBufferedDynamicMesh( IMesh *pMesh ) const;
 
 	// Is the vertex buffer dynamic?
 	bool IsDynamicVertexBuffer( IVertexBuffer *pVertexBuffer ) const;
@@ -898,7 +810,6 @@ public:
 	CVertexBuffer *GetVertexIDBuffer();
 
 	IVertexBuffer *GetDynamicVertexBuffer( IMaterial *pMaterial, bool buffered = true );
-	IIndexBuffer *GetDynamicIndexBuffer( IMaterial *pMaterial, bool buffered = true );
 	virtual void MarkUnusedVertexFields( unsigned int nFlags, int nTexCoordCount, bool *pUnusedTexCoords );
 
 	int UnusedVertexFields() const { return m_nUnusedVertexFields; }
@@ -946,9 +857,6 @@ private:
 	// The dynamic vertex buffers
 	CUtlVector< VertexBufferLookup_t >	m_DynamicVertexBuffers;
 
-	// The buffered mesh
-	CBufferedMeshDX8 m_BufferedMesh;
-
 	// The current dynamic mesh
 	CDynamicMeshDX8 m_DynamicMesh;
 	CDynamicMeshDX8 m_DynamicFlexMesh;
@@ -961,9 +869,6 @@ private:
 
 	// The dynamic mesh temp version (for shaders that modify vertex data)
 	CTempMeshDX8 m_DynamicTempMesh;
-
-	// Am I buffering or not?
-	bool m_BufferedMode;
 
 	// Using fat vertices?
 	bool m_bUseFatVertices;
@@ -2153,13 +2058,36 @@ void CBaseMeshDX8::BeginPass( )
 //-----------------------------------------------------------------------------
 // Sets the render state and gets the drawing going
 //-----------------------------------------------------------------------------
-inline void CBaseMeshDX8::DrawMesh( )
+inline void CBaseMeshDX8::DrawMesh( const Vector4D *pVecDiffuseModulation )
 {
 #ifdef DBGFLAG_ASSERT
 	// Make sure we're not drawing...
 	Assert( !m_IsDrawing );
 	m_IsDrawing = true;
 #endif
+
+	// PiMoN: I already spent too much time porting this from CS:GO, that's a big future-proof for me
+	// all I need to do is I need to add usage of diffise modulation vector in shader api and that's it
+	// apparently its done the same way $color2 works via shader code and instance command buffer
+	// The upstream shader backend does not consume instance modulation yet.
+	/*Vector4D vecDiffuseModulation(1.0f, 1.0f, 1.0f, 1.0f);
+	if ( pVecDiffuseModulation )
+	{
+		vecDiffuseModulation = *pVecDiffuseModulation;
+
+		Vector4D matModulation;
+		IMaterialInternal *pMaterial = ShaderAPI()->GetBoundMaterial();
+		pMaterial->GetColorModulation( &matModulation[0], &matModulation[1], &matModulation[2] );
+		matModulation[3] = pMaterial->GetAlphaModulation();
+
+		vecDiffuseModulation *= matModulation;
+	}
+	else
+	{
+		IMaterialInternal *pMaterial = ShaderAPI()->GetBoundMaterial();
+		pMaterial->GetColorModulation( &vecDiffuseModulation[0], &vecDiffuseModulation[1], &vecDiffuseModulation[2] );
+		vecDiffuseModulation[3] = pMaterial->GetAlphaModulation();
+	}*/
 
 	// This is going to cause RenderPass to get called a bunch
 	ShaderAPI()->DrawMesh( this );
@@ -3274,6 +3202,33 @@ bool CMeshDX8::SetRenderState( int nVertexOffsetInBytes, int nFirstVertexIdx, Ve
 //-----------------------------------------------------------------------------
 // Draws the static mesh
 //-----------------------------------------------------------------------------
+void CMeshDX8::DrawModulated( const Vector4D &diffuseModulation, int nFirstIndex, int nIndexCount )
+{
+	Assert( m_pVertexBuffer );
+	if ( !m_pVertexBuffer )
+	{
+		return;
+	}
+
+	if ( !ShaderUtil()->OnDrawMeshModulated( this, diffuseModulation, nFirstIndex, nIndexCount ) )
+	{
+		MarkAsDrawn();
+		return;
+	}
+
+	CPrimList primList;
+	if( nFirstIndex == -1 || nIndexCount == 0 )
+	{
+		primList.m_FirstIndex = 0;
+		primList.m_NumIndices = m_NumIndices;
+	}
+	else
+	{
+		primList.m_FirstIndex = nFirstIndex;
+		primList.m_NumIndices = nIndexCount;
+	}
+	DrawInternal( &diffuseModulation, &primList, 1 );
+}
 void CMeshDX8::Draw( int nFirstIndex, int nIndexCount )
 {
 	Assert( m_pVertexBuffer );
@@ -3299,7 +3254,7 @@ void CMeshDX8::Draw( int nFirstIndex, int nIndexCount )
 		primList.m_FirstIndex = nFirstIndex;
 		primList.m_NumIndices = nIndexCount;
 	}
-	DrawInternal( &primList, 1 );
+	DrawInternal( NULL, &primList, 1 );
 }
 
 void CMeshDX8::Draw( CPrimList *pLists, int nLists )
@@ -3316,11 +3271,11 @@ void CMeshDX8::Draw( CPrimList *pLists, int nLists )
 		return;
 	}
 
-	DrawInternal( pLists, nLists );
+	DrawInternal( NULL, pLists, nLists );
 }
 
 
-void CMeshDX8::DrawInternal( CPrimList *pLists, int nLists )
+void CMeshDX8::DrawInternal( const Vector4D *pDiffuseModulation, CPrimList *pLists, int nLists )
 {
 	HandleLateCreation();
 
@@ -3353,7 +3308,7 @@ void CMeshDX8::DrawInternal( CPrimList *pLists, int nLists )
 	s_FirstVertex = 0;
 	s_NumVertices = m_pVertexBuffer->VertexCount();
 
-	DrawMesh();
+	DrawMesh( pDiffuseModulation );
 }
 
 
@@ -3574,7 +3529,7 @@ void CDynamicMeshDX8::SetVertexFormat( VertexFormat_t format )
 
 		if ( m_nBufferId == 0 )
 		{
-			UseIndexBuffer( g_MeshMgr.GetDynamicIndexBuffer() );
+			UseIndexBuffer( g_MeshMgr.GetDynamicIndexBufferInternal() );
 		}
 
 		m_VertexOverride = m_IndexOverride = false;
@@ -3734,7 +3689,17 @@ void CDynamicMeshDX8::UnlockMesh( int nVertexCount, int nIndexCount, MeshDesc_t&
 //-----------------------------------------------------------------------------
 // Draws it
 //-----------------------------------------------------------------------------
+void CDynamicMeshDX8::DrawModulated( const Vector4D &vecDiffuseModulation, int nFirstIndex, int nIndexCount )
+{
+	DrawInternal( &vecDiffuseModulation, nFirstIndex, nIndexCount );
+}
+
 void CDynamicMeshDX8::Draw( int nFirstIndex, int nIndexCount )
+{
+	DrawInternal( NULL, nFirstIndex, nIndexCount );
+}
+
+void CDynamicMeshDX8::DrawInternal( const Vector4D *pVecDiffuseModulation, int nFirstIndex, int nIndexCount )
 {
 	if ( !ShaderUtil()->OnDrawMesh( this, nFirstIndex, nIndexCount ) )
 	{
@@ -3760,7 +3725,7 @@ void CDynamicMeshDX8::Draw( int nFirstIndex, int nIndexCount )
 		int baseIndex = m_IndexOverride ? 0 : m_FirstIndex;
 
 		// Overriding with the dynamic index buffer, preserve state!
-		if ( m_IndexOverride && m_pIndexBuffer == g_MeshMgr.GetDynamicIndexBuffer() )
+		if ( m_IndexOverride && m_pIndexBuffer == g_MeshMgr.GetDynamicIndexBufferInternal() )
 		{
 			baseIndex = m_FirstIndex;
 		}
@@ -3813,7 +3778,7 @@ void CDynamicMeshDX8::Draw( int nFirstIndex, int nIndexCount )
 		s_pPrims = &prim;
 		s_nPrims = 1;
 
-		DrawMesh();
+		DrawMesh( pVecDiffuseModulation );
 
 		s_pPrims = NULL;
 	}
@@ -4072,6 +4037,16 @@ CDynamicMeshDX8* CTempMeshDX8::GetDynamicMesh( )
 //-----------------------------------------------------------------------------
 void CTempMeshDX8::Draw( int nFirstIndex, int nIndexCount )
 {
+	DrawInternal( NULL, nFirstIndex, nIndexCount );
+}
+
+void CTempMeshDX8::DrawModulated( const Vector4D &vecDiffuseModulation, int nFirstIndex, int nIndexCount )
+{
+	DrawInternal( &vecDiffuseModulation, nFirstIndex, nIndexCount );
+}
+
+void CTempMeshDX8::DrawInternal( const Vector4D *pVecDiffuseModulation, int nFirstIndex, int nIndexCount )
+{
 	if ( !ShaderUtil()->OnDrawMesh( this, nFirstIndex, nIndexCount ) )
 	{
 		MarkAsDrawn();
@@ -4091,7 +4066,7 @@ void CTempMeshDX8::Draw( int nFirstIndex, int nIndexCount )
 				s_FirstIndex = nFirstIndex;
 				s_NumIndices = nIndexCount;
 
-				DrawMesh( );
+				DrawMesh( pVecDiffuseModulation );
 
 				// This assertion fails if a BeginPass() call was not matched by 
 				// a RenderPass() call
@@ -4516,330 +4491,6 @@ void CTempMeshDX8::RenderPass()
 
 //-----------------------------------------------------------------------------
 //
-// Buffered mesh implementation
-//
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-// constructor, destructor
-//-----------------------------------------------------------------------------
-
-CBufferedMeshDX8::CBufferedMeshDX8() : m_IsFlushing(false), m_WasRendered(true)
-{
-	m_pMesh = NULL;
-#ifdef DEBUG_BUFFERED_STATE
-	m_BufferedStateSet = false;
-#endif
-}
-
-CBufferedMeshDX8::~CBufferedMeshDX8()
-{
-}
-
-
-//-----------------------------------------------------------------------------
-// Sets the mesh
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::SetMesh( CBaseMeshDX8* pMesh )
-{
-	if (m_pMesh != pMesh)
-	{
-		ShaderAPI()->FlushBufferedPrimitives();
-		m_pMesh = pMesh;
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Spews the mesh data
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::Spew( int nVertexCount, int nIndexCount, const MeshDesc_t &spewDesc )
-{
-	if ( m_pMesh )
-	{
-		m_pMesh->Spew( nVertexCount, nIndexCount, spewDesc );
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Sets the material
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::SetVertexFormat( VertexFormat_t format )
-{
-	Assert( m_pMesh );
-	if (m_pMesh->NeedsVertexFormatReset(format))
-	{
-		ShaderAPI()->FlushBufferedPrimitives();
-		m_pMesh->SetVertexFormat( format );
-	}
-}
-
-void CBufferedMeshDX8::SetMorphFormat( MorphFormat_t format )
-{
-	Assert( m_pMesh );
-	m_pMesh->SetMorphFormat( format );
-}
-
-VertexFormat_t CBufferedMeshDX8::GetVertexFormat( ) const
-{
-	Assert( m_pMesh );
-	return m_pMesh->GetVertexFormat();
-}
-
-void CBufferedMeshDX8::SetMaterial( IMaterial* pMaterial )
-{
-#if _DEBUG
-	Assert( m_pMesh );
-	m_pMesh->SetMaterial( pMaterial );
-#endif
-}
-
-void CBufferedMeshDX8::ValidateData( int nVertexCount, int nIndexCount, const MeshDesc_t & spewDesc )
-{
-#if _DEBUG
-	Assert( m_pMesh );
-	m_pMesh->ValidateData( nVertexCount, nIndexCount, spewDesc );
-#endif
-}
-
-
-//-----------------------------------------------------------------------------
-// Sets the flex mesh to render with this mesh
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::SetFlexMesh( IMesh *pMesh, int nVertexOffsetInBytes )
-{
-	// FIXME: Probably are situations where we don't need to flush,
-	// but this is going to look different in a very short while, so I'm not going to bother
-	ShaderAPI()->FlushBufferedPrimitives();
-	m_pMesh->SetFlexMesh( pMesh, nVertexOffsetInBytes );
-}
-
-
-//-----------------------------------------------------------------------------
-// checks to see if it was rendered..
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::ResetRendered()
-{
-	m_WasRendered = false;
-}
-
-bool CBufferedMeshDX8::WasNotRendered() const
-{
-	return !m_WasRendered;
-}
-
-
-//-----------------------------------------------------------------------------
-// "Draws" it
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::Draw( int nFirstIndex, int nIndexCount )
-{
-	if ( !ShaderUtil()->OnDrawMesh( this, nFirstIndex, nIndexCount ) )
-	{
-		m_WasRendered = true;
-		MarkAsDrawn();
-		return;
-	}
-	
-	Assert( !m_IsFlushing && !m_WasRendered );
-
-	// Gotta draw all of the buffered mesh
-	Assert( (nFirstIndex == -1) && (nIndexCount == 0) );
-
-	// No need to draw it more than once...
-	m_WasRendered = true;
-
-	// We've got something to flush
-	m_FlushNeeded = true;
-
-	// Less than 0 indices indicates we were using a standard buffer
-	if ( m_pMesh->HasFlexMesh() || !ShaderUtil()->GetConfig().bBufferPrimitives )
-	{
-		ShaderAPI()->FlushBufferedPrimitives();
-	}
-}
-
-
-//-----------------------------------------------------------------------------
-// Sets the primitive mode
-//-----------------------------------------------------------------------------
-
-void CBufferedMeshDX8::SetPrimitiveType( MaterialPrimitiveType_t type )
-{
-	Assert( IsX360() || ( type != MATERIAL_INSTANCED_QUADS ) );
-	Assert( type != MATERIAL_HETEROGENOUS );
-
-	if (type != GetPrimitiveType())
-	{
-		ShaderAPI()->FlushBufferedPrimitives();
-		m_pMesh->SetPrimitiveType(type);
-	}
-}
-
-MaterialPrimitiveType_t CBufferedMeshDX8::GetPrimitiveType( ) const
-{
-	return m_pMesh->GetPrimitiveType();
-}
-
-
-//-----------------------------------------------------------------------------
-// Locks/unlocks the entire mesh
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::LockMesh( int nVertexCount, int nIndexCount, MeshDesc_t& desc )
-{
-	ShaderUtil()->SyncMatrices();
-
-	Assert( m_pMesh );
-	Assert( m_WasRendered );
-
-	// Do some pre-lock processing
-	m_pMesh->PreLock();
-
-	// for tristrips, gotta make degenerate ones...
-	m_ExtraIndices = 0;
-	bool tristripFixup = (m_pMesh->IndexCount() != 0) && 
-		(m_pMesh->GetPrimitiveType() == MATERIAL_TRIANGLE_STRIP);
-	if (tristripFixup)
-	{
-		m_ExtraIndices = (m_pMesh->IndexCount() & 0x1) != 0 ? 3 : 2;
-		nIndexCount += m_ExtraIndices;
-	}
-
-	// Flush if we gotta
-	if (!m_pMesh->HasEnoughRoom(nVertexCount, nIndexCount))
-	{
-		ShaderAPI()->FlushBufferedPrimitives();
-	}
-
-	m_pMesh->LockMesh( nVertexCount, nIndexCount, desc );
-
-//	This is taken care of in the function above.
-//	CBaseMeshDX8::m_bMeshLocked = true;
-
-	// Deal with fixing up the tristrip..
-	if ( tristripFixup && desc.m_nIndexSize )
-	{
-		char buf[32];
-		if (DebugTrace())
-		{
-			if (m_ExtraIndices == 3)
-				sprintf(buf,"Link Index: %d %d\n", m_LastIndex, m_LastIndex);
-			else
-				sprintf(buf,"Link Index: %d\n", m_LastIndex);
-			Plat_DebugString(buf);
-		}
-		*desc.m_pIndices++ = m_LastIndex;
-		if (m_ExtraIndices == 3)
-		{
-			*desc.m_pIndices++ = m_LastIndex;
-		}
-
-		// Leave room for the last padding index
-		++desc.m_pIndices;
-	}
-
-	m_WasRendered = false;
-
-#ifdef DEBUG_BUFFERED_MESHES
-	if (m_BufferedStateSet)
-	{
-		BufferedState_t compare;
-		ShaderAPI()->GetBufferedState( compare );
-		Assert( !memcmp( &compare, &m_BufferedState, sizeof(compare) ) );
-	}
-	else
-	{
-		ShaderAPI()->GetBufferedState( m_BufferedState );
-		m_BufferedStateSet = true;
-	}
-#endif
-}
-
-
-//-----------------------------------------------------------------------------
-// Locks/unlocks the entire mesh
-//-----------------------------------------------------------------------------
-void CBufferedMeshDX8::UnlockMesh( int nVertexCount, int nIndexCount, MeshDesc_t& desc )
-{
-	Assert( m_pMesh );
-
-	// Gotta fix up the first index to batch strips reasonably
-	if ((m_pMesh->GetPrimitiveType() == MATERIAL_TRIANGLE_STRIP) && desc.m_nIndexSize )
-	{
-		if (m_ExtraIndices > 0)
-		{
-			*(desc.m_pIndices - 1) = *desc.m_pIndices;
-
-			if (DebugTrace())
-			{
-				char buf[32];
-				sprintf(buf,"Link Index: %d\n", *desc.m_pIndices);
-				Plat_DebugString(buf);
-			}
-		}
-		
-		// Remember the last index for next time 
-		m_LastIndex = desc.m_pIndices[nIndexCount - 1];
-
-		nIndexCount += m_ExtraIndices;
-	}
-
-	m_pMesh->UnlockMesh( nVertexCount, nIndexCount, desc );
-
-//	This is taken care of in the function above.
-//	CBaseMeshDX8::m_bMeshLocked = false;
-}
-
-
-//-----------------------------------------------------------------------------
-// Renders a pass
-//-----------------------------------------------------------------------------
-
-void CBufferedMeshDX8::RenderPass()
-{
-	// this should never be called!
-	Assert(0);
-}
-
-//-----------------------------------------------------------------------------
-// Flushes queued data
-//-----------------------------------------------------------------------------
-
-void CBufferedMeshDX8::Flush( )
-{
-	// If you are hitting this assert you are causing a flush between a 
-	// meshbuilder begin/end and you are more than likely losing rendering data.
-	AssertOnce( !CBaseMeshDX8::m_bMeshLocked );
-
-	if ( m_pMesh && !m_IsFlushing && m_FlushNeeded )
-	{
-		VPROF( "CBufferedMeshDX8::Flush" );
-
-#ifdef DEBUG_BUFFERED_MESHES
-		if( m_BufferedStateSet )
-		{
-			BufferedState_t compare;
-			ShaderAPI()->GetBufferedState( compare );
-			Assert( !memcmp( &compare, &m_BufferedState, sizeof(compare) ) );
-			m_BufferedStateSet = false;
-		}
-#endif
-
-		m_IsFlushing = true;
-
-		// Actually draws the data using the mesh's material
-		static_cast<IMesh*>(m_pMesh)->Draw();
-
-		m_IsFlushing = false;
-		m_FlushNeeded = false;
-
-		m_pMesh->SetFlexMesh( NULL, 0 );
-	}
-}
-
-//-----------------------------------------------------------------------------
-//
 // Mesh manager implementation
 //
 //-----------------------------------------------------------------------------
@@ -4887,8 +4538,6 @@ void CMeshMgr::Init()
 	CreateVertexIDBuffer();
 
 	CreateZeroVertexBuffer();
-		
-	m_BufferedMode = !IsX360();
 }
 
 void CMeshMgr::Shutdown()
@@ -5059,11 +4708,6 @@ bool CMeshMgr::IsDynamicMesh( IMesh* pMesh ) const
 	return ( pMesh == &m_DynamicMesh ) || ( pMesh == &m_DynamicFlexMesh );
 }
 
-bool CMeshMgr::IsBufferedDynamicMesh( IMesh* pMesh ) const
-{
-	return ( pMesh == &m_BufferedMesh );
-}
-
 bool CMeshMgr::IsDynamicVertexBuffer( IVertexBuffer *pVertexBuffer ) const
 {
 	return ( pVertexBuffer == &m_DynamicVertexBuffer );
@@ -5141,19 +4785,6 @@ void CMeshMgr::DestroyVertexBuffers()
 	m_DynamicVertexBuffers.RemoveAll();
 	m_DynamicMesh.Reset();
 	m_DynamicFlexMesh.Reset();
-}
-
-
-//-----------------------------------------------------------------------------
-// Flushes the dynamic mesh
-//-----------------------------------------------------------------------------
-void CMeshMgr::Flush()
-{
-	if ( IsPC() )
-	{
-		m_BufferedMesh.HandleLateCreation();
-		m_BufferedMesh.Flush();
-	}
 }
 
 
@@ -5245,24 +4876,6 @@ IMesh* CMeshMgr::GetDynamicMesh( IMaterial* pMaterial, VertexFormat_t vertexForm
 
 	Assert( (pMaterial == NULL) || ((IMaterialInternal *)pMaterial)->IsRealTimeVersion() );
 
-	if ( IsX360() )
-	{
-		buffered = false;
-	}
-
-	// Can't be buffered if we're overriding the buffers
-	if ( pVertexOverride || pIndexOverride )
-	{
-		buffered = false;
-	}
-
-	// When going from buffered to unbuffered mode, need to flush..
-	if ((m_BufferedMode != buffered) && m_BufferedMode)
-	{
-		m_BufferedMesh.SetMesh(0);
-	}
-	m_BufferedMode = buffered;
-
 	IMaterialInternal* pMatInternal = static_cast<IMaterialInternal*>(pMaterial);
 
 	bool needTempMesh = ShaderAPI()->IsInSelectionMode();
@@ -5294,13 +4907,6 @@ IMesh* CMeshMgr::GetDynamicMesh( IMaterial* pMaterial, VertexFormat_t vertexForm
 	else
 	{
 		pMesh = &m_DynamicMesh;
-	}
-
-	if ( m_BufferedMode )
-	{
-		Assert( !m_BufferedMesh.WasNotRendered() );
-		m_BufferedMesh.SetMesh( pMesh );
-		pMesh = &m_BufferedMesh;
 	}
 
 	if( !pVertexOverride )
@@ -5364,7 +4970,7 @@ IMesh* CMeshMgr::GetDynamicMesh( IMaterial* pMaterial, VertexFormat_t vertexForm
 void CMeshMgr::ComputeVertexDescription( unsigned char* pBuffer, 
 	VertexFormat_t vertexFormat, MeshDesc_t& desc ) const
 {
-	ComputeVertexDesc( pBuffer, vertexFormat, (VertexDesc_t &)desc );
+	ComputeVertexDesc< false >( pBuffer, vertexFormat, (VertexDesc_t &)desc );
 }
 
 
@@ -5437,12 +5043,6 @@ void CMeshMgr::GetMaxToRender( IMesh *pMesh, bool bMaxUntilFlush, int *pMaxVerts
 		*pMaxVerts = 0;
 		*pMaxIndices = m_pDynamicIndexBuffer->IndexCount();
 		return;
-	}
-
-	if ( IsBufferedDynamicMesh( pMesh ) )
-	{
-		pBaseMesh = (CBaseMeshDX8*)static_cast<CBufferedMeshDX8*>( pBaseMesh )->GetMesh();
-		pMesh = pBaseMesh;
 	}
 
 	// Static mesh? Max you can use is 65535
@@ -5560,19 +5160,12 @@ CVertexBuffer *CMeshMgr::FindOrCreateVertexBuffer( int nDynamicBufferId, VertexF
 	return m_DynamicVertexBuffers[nDynamicBufferId].m_pBuffer;
 }
 
-CIndexBuffer *CMeshMgr::GetDynamicIndexBuffer()
+CIndexBuffer *CMeshMgr::GetDynamicIndexBufferInternal()
 {
 	return m_pDynamicIndexBuffer;
 }
 
 IVertexBuffer *CMeshMgr::GetDynamicVertexBuffer( IMaterial *pMaterial, bool buffered )
-{
-	Assert( 0 );
-	return NULL;
-//	return ( IMeshDX8 * )GetDynamicMesh( pMaterial, buffered, NULL, NULL );
-}
-
-IIndexBuffer *CMeshMgr::GetDynamicIndexBuffer( IMaterial *pMaterial, bool buffered )
 {
 	Assert( 0 );
 	return NULL;
@@ -5627,11 +5220,6 @@ void CMeshMgr::DestroyIndexBuffer( IIndexBuffer *pIndexBuffer )
 // Do we need to specify the stream here in the case of locking multiple dynamic VBs on different streams?
 IVertexBuffer *CMeshMgr::GetDynamicVertexBuffer( int streamID, VertexFormat_t vertexFormat, bool bBuffered )
 {
-	if ( IsX360() )
-	{
-		bBuffered = false;
-	}
-
 	if ( CompressionType( vertexFormat ) != VERTEX_COMPRESSION_NONE )
 	{
 		// UNDONE: support compressed dynamic meshes if needed (pro: less VB memory, con: time spent compressing)
@@ -5647,8 +5235,7 @@ IVertexBuffer *CMeshMgr::GetDynamicVertexBuffer( int streamID, VertexFormat_t ve
 	}
 #endif
 
-	m_BufferedMode = bBuffered;
-	Assert( !m_BufferedMode ); // MESHFIXME: don't deal with buffered VBs yet.
+	Assert( !bBuffered ); // MESHFIXME: don't deal with buffered VBs yet.
 
 	bool needTempMesh = ShaderAPI()->IsInSelectionMode();
 	
@@ -5674,30 +5261,11 @@ IVertexBuffer *CMeshMgr::GetDynamicVertexBuffer( int streamID, VertexFormat_t ve
 		pVertexBuffer = &m_DynamicVertexBuffer;
 	}
 
-	if ( m_BufferedMode )
-	{
-		Assert( 0 ); // don't support this yet.
-#if 0
-		Assert( !m_BufferedMesh.WasNotRendered() );
-		m_BufferedMesh.SetMesh( pMesh );
-		pMesh = &m_BufferedMesh;
-#endif
-	}
-
 	return pVertexBuffer;
 }
 
-IIndexBuffer *CMeshMgr::GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool bBuffered )
+IIndexBuffer *CMeshMgr::GetDynamicIndexBuffer()
 {
-	if ( IsX360() )
-	{
-		bBuffered = false;
-	}
-
-	m_BufferedMode = bBuffered;
-
-	Assert( !m_BufferedMode );
-
 #ifdef DBGFLAG_ASSERT
 	bool needTempMesh = 
 #endif
@@ -5711,9 +5279,7 @@ IIndexBuffer *CMeshMgr::GetDynamicIndexBuffer( MaterialIndexFormat_t fmt, bool b
 #endif
 
 	Assert( !needTempMesh ); // don't handle this yet. MESHFIXME
-
-	CIndexBufferBase *pIndexBuffer = &m_DynamicIndexBuffer;
-	return pIndexBuffer;
+	return &m_DynamicIndexBuffer;
 }
 
 void CMeshMgr::SetVertexIDStreamState()

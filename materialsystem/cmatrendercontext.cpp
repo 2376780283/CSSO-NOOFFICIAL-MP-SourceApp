@@ -2949,6 +2949,12 @@ bool CMatRenderContext::OnDrawMesh( IMesh *pMesh, CPrimList *pLists, int nLists 
 	return true;
 }
 
+bool CMatRenderContext::OnDrawMeshModulated( IMesh *pMesh, const Vector4D& vecDiffuseModulation, int firstIndex, int numIndices )
+{
+	SyncMatrices();
+	return true;
+}
+
 void CMatRenderContext::AsyncCreateTextureFromRenderTarget( ITexture* pSrcRt, const char* pDstName, ImageFormat dstFmt, bool bGenMips, int nAdditionalCreationFlags, IAsyncTextureOperationReceiver* pRecipient, void* pExtraArgs )
 {
 	if ( g_pMaterialSystem->GetThreadMode() == MATERIAL_SINGLE_THREADED ) 
