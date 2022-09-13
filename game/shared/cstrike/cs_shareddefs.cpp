@@ -492,6 +492,7 @@ const char* g_szMusicKits[MAX_MUSIC] =
 	"neckdeep_02",
 	"newbeatfund_01",
 	"noisia_01",
+	"perfectworld_01",
 	"proxy_01",
 	"roam_01",
 	"robertallaire_01",
