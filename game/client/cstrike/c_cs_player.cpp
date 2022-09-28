@@ -128,7 +128,7 @@ const float CycleLatchTolerance = 0.15;	// amount we can diverge from the server
 extern ConVar mp_playerid_delay;
 extern ConVar mp_playerid_hold;
 extern ConVar sv_allowminmodels;
-
+extern ConVar mp_respawn_immunitytime;
 extern ConVar mp_buy_anywhere;
 
 class CAddonInfo
@@ -2767,7 +2767,6 @@ void C_CSPlayer::ClientThink()
 		}
 	}
 
-	ConVarRef mp_respawn_immunitytime( "mp_respawn_immunitytime" );
 	float flImmuneTime = mp_respawn_immunitytime.GetFloat();
 	if ( flImmuneTime > 0.0f || (flImmuneTime >= 0.0f && CSGameRules()->IsWarmupPeriod()) )
 	{

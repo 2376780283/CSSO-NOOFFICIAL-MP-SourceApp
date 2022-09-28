@@ -8190,13 +8190,13 @@ bool CCSGameRules::IsPlayingGunGameTRBomb( void ) const
 bool CCSGameRules::IsPlayingClassicCasual( void ) const
 {
     return ( IsPlayingClassic() &&
-        g_pGameTypes->GetCurrentGameMode() == CS_GameMode::Classic_Casual);
+			 g_pGameTypes->GetCurrentGameMode() == CS_GameMode::Classic_Casual );
 }
 
 bool CCSGameRules::IsPlayingAnyCompetitiveStrictRuleset( void ) const
 {
 	return (IsPlayingClassic() && ( (g_pGameTypes->GetCurrentGameMode() == CS_GameMode::Classic_Competitive) ||
-									(g_pGameTypes->GetCurrentGameMode() == CS_GameMode::Classic_Competitive_2v2) ));
+									(g_pGameTypes->GetCurrentGameMode() == CS_GameMode::Classic_Competitive_2v2) ) );
 }
 
 bool CCSGameRules::IsPlayingOffline( void ) const
@@ -8205,7 +8205,7 @@ bool CCSGameRules::IsPlayingOffline( void ) const
 	if ( engine->IsDedicatedServer() )
 		return false;
 #endif
-	ConVarRef sv_lan( "sv_lan" );
+	static ConVarRef sv_lan( "sv_lan" );
 	return sv_lan.GetBool();
 }
 
