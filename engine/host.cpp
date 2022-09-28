@@ -597,22 +597,6 @@ ConVar	host_speeds( "host_speeds","0", 0, "Show general system running times." )
 
 ConVar	host_flush_threshold( "host_flush_threshold", "20", 0, "Memory threshold below which the host should flush caches between server instances" );
 
-void HostTimerSpinMsChangedCallback( IConVar *var, const char *pOldString, float flOldValue );
-ConVar host_timer_spin_ms( "host_timer_spin_ms", "0", FCVAR_NONE, "Use CPU busy-loop for improved timer precision (dedicated only)", HostTimerSpinMsChangedCallback );
-
-void HostTimerSpinMsChangedCallback( IConVar *var, const char *pOldString, float flOldValue )
-{
-	const char *pForcedValue = CommandLine()->ParmValue( "+host_timer_spin_ms" );
-	if ( pForcedValue != NULL )
-	{
-		if ( V_strcmp( host_timer_spin_ms.GetString(), pForcedValue ) )
-		{
-			Msg( "Value for host_timer_spin_ms is locked to %s by command line parameter.\n", pForcedValue );
-			host_timer_spin_ms.SetValue( pForcedValue );
-		}
-	}
-}
-
 CON_COMMAND( host_timer_report, "Spew CPU timer jitter for the last 128 frames in microseconds (dedicated only)" )
 {
 	if ( sv.IsDedicated() )
