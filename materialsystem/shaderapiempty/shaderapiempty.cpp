@@ -1220,6 +1220,10 @@ public:
 	virtual bool GetHDREnabled( void ) const { return true; }
 	virtual void SetHDREnabled( bool bEnable ) {}
 
+	virtual void SetTextureFilterMode( Sampler_t sampler, TextureFilterMode_t nMode )
+	{
+	}
+
 	virtual void SetScreenSizeForVPOS( int pshReg ) {}
 
 	virtual void CopyRenderTargetToScratchTexture( ShaderAPITextureHandle_t srcRt, ShaderAPITextureHandle_t dstTex, Rect_t *pSrcRect = NULL, Rect_t *pDstRect = NULL ) 

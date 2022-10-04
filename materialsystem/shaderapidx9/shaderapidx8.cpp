@@ -1493,6 +1493,8 @@ private:
 	void CopyBitsFromHostSurface( IDirect3DSurface* pSurfaceBits, 
 		const Rect_t &dstRect, unsigned char *pData, ImageFormat srcFormat, ImageFormat dstFormat, int nDstStride );
 
+	void SetTextureFilterMode( Sampler_t sampler, TextureFilterMode_t nMode );
+
 	FORCEINLINE void SetTransform( D3DTRANSFORMSTATETYPE State, CONST D3DXMATRIX *pMatrix )
 	{
 #if !defined( _X360 )
@@ -7045,6 +7047,28 @@ void CShaderAPIDx8::SetTextureState( Sampler_t sampler, ShaderAPITextureHandle_t
 	SETSAMPLESTATEANDMIRROR_FLOAT( sampler, samplerState, D3DSAMP_MIPMAPLODBIAS, m_LodBias, lodBias );
 	
 #endif
+}
+
+void CShaderAPIDx8::SetTextureFilterMode( Sampler_t sampler, TextureFilterMode_t nMode )
+{
+	SamplerState_t &samplerState = SamplerState( sampler );
+	D3DTEXTUREFILTERTYPE minFilter = samplerState.m_MinFilter;
+	D3DTEXTUREFILTERTYPE magFilter = samplerState.m_MagFilter;
+	D3DTEXTUREFILTERTYPE mipFilter = samplerState.m_MipFilter;
+	
+
+	switch( nMode )
+	{
+		case TFILTER_MODE_POINTSAMPLED:
+			minFilter = D3DTEXF_POINT;
+			magFilter = D3DTEXF_POINT;
+			mipFilter = D3DTEXF_POINT;
+			break;
+	}
+	SETSAMPLESTATEANDMIRROR( sampler, samplerState, D3DSAMP_MINFILTER, m_MinFilter, minFilter );
+	SETSAMPLESTATEANDMIRROR( sampler, samplerState, D3DSAMP_MAGFILTER, m_MagFilter, magFilter );
+	SETSAMPLESTATEANDMIRROR( sampler, samplerState, D3DSAMP_MIPFILTER, m_MipFilter, mipFilter );
+	
 }
 
 void CShaderAPIDx8::BindTexture( Sampler_t sampler, ShaderAPITextureHandle_t textureHandle )

@@ -2516,8 +2516,6 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 		return;
 	}
 
-	ConVarRef mat_software_aa_strength( "mat_software_aa_strength" );
-
 	// Set software-AA on by default for 360
 	if ( mat_software_aa_strength.GetFloat() == -1.0f )
 	{

@@ -2,43 +2,68 @@
 class screenspaceeffect_vs20_Static_Index
 {
 private:
-	int m_nX360APPCHOOSER;
+	int m_nVERTEXCOLOR;
 #ifdef _DEBUG
-	bool m_bX360APPCHOOSER;
+	bool m_bVERTEXCOLOR;
 #endif
 public:
-	void SetX360APPCHOOSER( int i )
+	void SetVERTEXCOLOR( int i )
 	{
 		Assert( i >= 0 && i <= 1 );
-		m_nX360APPCHOOSER = i;
+		m_nVERTEXCOLOR = i;
 #ifdef _DEBUG
-		m_bX360APPCHOOSER = true;
+		m_bVERTEXCOLOR = true;
 #endif
 	}
-	void SetX360APPCHOOSER( bool i )
+	void SetVERTEXCOLOR( bool i )
 	{
-		m_nX360APPCHOOSER = i ? 1 : 0;
+		m_nVERTEXCOLOR = i ? 1 : 0;
 #ifdef _DEBUG
-		m_bX360APPCHOOSER = true;
+		m_bVERTEXCOLOR = true;
+#endif
+	}
+private:
+	int m_nTRANSFORMVERTS;
+#ifdef _DEBUG
+	bool m_bTRANSFORMVERTS;
+#endif
+public:
+	void SetTRANSFORMVERTS( int i )
+	{
+		Assert( i >= 0 && i <= 1 );
+		m_nTRANSFORMVERTS = i;
+#ifdef _DEBUG
+		m_bTRANSFORMVERTS = true;
+#endif
+	}
+	void SetTRANSFORMVERTS( bool i )
+	{
+		m_nTRANSFORMVERTS = i ? 1 : 0;
+#ifdef _DEBUG
+		m_bTRANSFORMVERTS = true;
 #endif
 	}
 public:
 	screenspaceeffect_vs20_Static_Index( )
 	{
 #ifdef _DEBUG
-		m_bX360APPCHOOSER = true;
+		m_bVERTEXCOLOR = true;
 #endif // _DEBUG
-		m_nX360APPCHOOSER =  0;
+		m_nVERTEXCOLOR = 0;
+#ifdef _DEBUG
+		m_bTRANSFORMVERTS = true;
+#endif // _DEBUG
+		m_nTRANSFORMVERTS = 0;
 	}
 	int GetIndex()
 	{
 		// Asserts to make sure that we aren't using any skipped combinations.
 		// Asserts to make sure that we are setting all of the combination vars.
 #ifdef _DEBUG
-		bool bAllStaticVarsDefined = m_bX360APPCHOOSER;
+		bool bAllStaticVarsDefined = m_bVERTEXCOLOR && m_bTRANSFORMVERTS;
 		Assert( bAllStaticVarsDefined );
 #endif // _DEBUG
-		return ( 1 * m_nX360APPCHOOSER ) + 0;
+		return ( 1 * m_nVERTEXCOLOR ) + ( 2 * m_nTRANSFORMVERTS ) + 0;
 	}
 };
 #define shaderStaticTest_screenspaceeffect_vs20 0

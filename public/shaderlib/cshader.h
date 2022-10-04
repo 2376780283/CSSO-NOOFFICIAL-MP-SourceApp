@@ -467,6 +467,11 @@ inline bool CShader_IsFlag2Set( IMaterialVar **params, MaterialVarFlags2_t _flag
 	_vshIndex.Set ## var( ( val ) ); if(g_shaderConfigDumpEnable){printf("\n   VS stat var %s = %d (%s)", #var, (int) val, #val );}; \
 	int vsh_forgot_to_set_static_ ## var = 0
 
+#define SET_STATIC_VERTEX_SHADER_COMBO_HAS_DEFAULT( var, val ) \
+	int staticvertshadercombo_ ## var ## _missingcurlybraces = 0; \
+	staticvertshadercombo_ ## var ## _missingcurlybraces = staticvertshadercombo_ ## var ## _missingcurlybraces; \
+	_vshIndex.Set ## var( ( val ) ); 
+
 
 // psh_testAllCombos adds up all of the psh_forgot_to_set_dynamic_ ## var's from 
 // SET_DYNAMIC_PIXEL_SHADER_COMBO so that an error is generated if they aren't set.

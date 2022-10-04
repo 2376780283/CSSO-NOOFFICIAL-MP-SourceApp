@@ -145,6 +145,12 @@ struct ShaderViewport_t
 };
 
 
+enum TextureFilterMode_t
+{
+	TFILTER_MODE_POINTSAMPLED = 1,
+};
+
+
 //-----------------------------------------------------------------------------
 // The Shader interface versions
 //-----------------------------------------------------------------------------
@@ -348,6 +354,9 @@ public:
 	virtual void SetDepthFeatheringPixelShaderConstant( int iConstant, float fDepthBlendScale ) = 0;
 
 	virtual void SetScreenSizeForVPOS( int pshReg = 32 ) = 0;
+
+	// allows overriding texture filtering mode on an already bound texture.
+	virtual void SetTextureFilterMode( Sampler_t sampler, TextureFilterMode_t nMode ) = 0;
 };
 // end class IShaderDynamicAPI
 
