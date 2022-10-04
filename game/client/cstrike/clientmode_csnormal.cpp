@@ -1128,6 +1128,10 @@ void ClientModeCSNormal::FireGameEvent( IGameEvent *event )
 
 	if ( Q_strcmp( "round_start", eventname ) == 0 )
 	{
+		if ( !pLocalPlayer )
+			return;
+
+		m_iRoundStatus = ROUND_STARTED;
 		m_nRoundMVP = 0;
 		// recreate all client side physics props
 		C_PhysPropClientside::RecreateAll();

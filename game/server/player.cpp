@@ -5174,6 +5174,9 @@ void CBasePlayer::Spawn( void )
 	// track where we are in the nav mesh
 	UpdateLastKnownArea();
 
+	m_bKilledByHeadshot = false;
+	m_iDeathPostEffect = 0;
+
 	m_weaponFiredTimer.Invalidate();
 
 	m_flDuckAmount = 0;
