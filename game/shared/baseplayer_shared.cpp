@@ -6,7 +6,11 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "const.h"
+#include "cs_shareddefs.h"
 #include "movevars_shared.h"
+#include "shareddefs.h"
+#include "soundflags.h"
 #include "util_shared.h"
 #include "datacache/imdlcache.h"
 #include "cs_ammodef.h"
@@ -673,13 +677,12 @@ void CBasePlayer::UpdateStepSound( surfacedata_t *psurface, const Vector &vecOri
 	{
 		static int iSkipStep = 0;
 
-		if ( iSkipStep == 0 )
+		if ( iSkipStep++ == 0 )
 		{
-			iSkipStep++;
 			return;
 		}
 
-		if ( iSkipStep++ == 3 )
+		if ( iSkipStep == 3 )
 		{
 			iSkipStep = 0;
 		}
@@ -832,25 +835,12 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 	{
 		// Only use these rules when in prediction.
 		filter.UsePredictionRules();
-	}
-#endif
 
-	if( !bForce )
-	{
-		filter.AddRecipientsByPAS( vecOrigin );
+		// 新版CSGO中自己的脚步声会比其他人的脚步声小
+		fvol *= 0.25f;
 	}
-
-#ifndef CLIENT_DLL
-	// in MP, server removes all players in the vecOrigin's PVS, these players generate the footsteps client side
-	if ( gpGlobals->maxClients > 1 && !bForce )
-	{
-		filter.RemoveRecipientsByPVS( vecOrigin );
-	}
-	
-	if( bForce )
-	{
-		filter.AddAllPlayers();
-	}
+#else
+	filter.AddAllPlayers();
 	// the client plays it's own sound
 	filter.RemoveRecipient( this );
 
@@ -881,7 +871,7 @@ void CBasePlayer::PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, flo
 // #endif
 
 	EmitSound_t ep;
-	ep.m_nChannel = CHAN_BODY;
+	ep.m_nChannel = params.channel;
 	ep.m_pSoundName = params.soundname;
 	ep.m_flVolume = fvol;
 	ep.m_SoundLevel = params.soundlevel;
