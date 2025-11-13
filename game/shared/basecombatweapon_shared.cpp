@@ -21,6 +21,7 @@
 	#include "prediction.h"
 	#include "npcevent.h"
 	#include "eventlist.h"
+	#include "SkinProcessor.h"
 #endif
 // NVNT end extra includes
 
@@ -120,14 +121,6 @@ void RecvProxy_WeaponWorldmodel( const CRecvProxyData *pData, void *pStruct, voi
 	}
 }
 
-int CBaseWeaponWorldModel::DrawModel( int flags )
-{
-	if ( IsEffectActive(EF_NODRAW) || !ShouldDraw() )
-		return 0;
-
-	return BaseClass::DrawModel( flags );
-}
-
 void CBaseWeaponWorldModel::OnDataChanged( DataUpdateType_t type )
 {
 	if ( type == DATA_UPDATE_CREATED )
@@ -138,6 +131,11 @@ void CBaseWeaponWorldModel::OnDataChanged( DataUpdateType_t type )
 	BaseClass::OnDataChanged( type );
 
 	ValidateParent();
+	
+	if ( IsVisible() )
+		{
+		//	ApplyCustomMaterialsAndStickers();
+		}
 
 	UpdateVisibility();
 }
@@ -415,6 +413,24 @@ bool CBaseWeaponWorldModel::ShouldDraw( void )
 	return true;
 }
 
+int CBaseWeaponWorldModel::DrawModel(int flags)
+{
+    CMatRenderContextPtr pRenderContext(materials);
+    
+    int ret = BaseClass::DrawModel(flags);
+    
+    CBaseCombatWeapon* pWeapon = m_hCombatWeaponParent.Get();
+    if (!pWeapon)
+    return ret;
+
+    IMaterial* pSkinMat = g_SkinProcessor.GetSkinMaterial(pWeapon);
+
+    if (pSkinMat)
+        modelrender->ForcedMaterialOverride(pSkinMat);
+    
+    return ret;
+}
+
 #else
 
 int CBaseWeaponWorldModel::ShouldTransmit( const CCheckTransmitInfo *pInfo )
@@ -469,6 +485,7 @@ CBaseWeaponWorldModel* CBaseCombatWeapon::CreateWeaponWorldModel( void )
 
 		pWorldModel->SetOwningWeapon( this );
 		m_hWeaponWorldModel.Set( pWorldModel );
+	//	pWorldModel->ApplyCustomMaterials();
 
 		return pWorldModel;
 	}
@@ -486,6 +503,7 @@ void CBaseCombatWeapon::UpdateVisibility( void )
 	if ( pWeaponWorldModel )
 	{
 		pWeaponWorldModel->UpdateVisibility();
+	//	pWeaponWorldModel->ApplyCustomMaterials();
 	}
 	BaseClass::UpdateVisibility();
 }
