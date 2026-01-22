@@ -16,6 +16,7 @@
 #include "weapon_csbase.h"
 
 ConVar cl_showloadout( "cl_showloadout", "1", FCVAR_ARCHIVE, "Toggles display of current loadout." );
+ConVar cl_weapon_icon_blur( "cl_weapon_icon_blur", "1", FCVAR_ARCHIVE, "Enable edge blur and rarity coloring on weapon icons" );
 extern ConVar cl_hud_color;
 extern ConVar cl_draw_only_deathnotices;
 
@@ -134,11 +135,29 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 	C_BasePlayer *pPlayer = GetHudPlayer();
 	if ( !pCSWeapon || !pPlayer || !pCSWeapon->GetPlayerOwner() || pCSWeapon->GetPlayerOwner() != pPlayer )
 		return;
+        
+    int iPaintKit = pCSWeapon->GetPaintKit();
+    const SkinDefinition_t* pSkinDef = NULL;
+    
+    if ( iPaintKit > 0 )
+	{
+		pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+		if ( pSkinDef )
+		{
+			DevMsg( "[WeaponSelection] Found skin: paintkit=%d name='%s' rarity=%d\n", 
+				iPaintKit, pSkinDef->szName, pSkinDef->rarity );
+		}
+		else
+		{
+			DevMsg( "[WeaponSelection] Skin not found in database for paintkit=%d\n", iPaintKit );
+		}
+	}
 
 	//Put the new weapon in the list
 	if ( !m_weaponPanels[nWepSlot][nWepPos].bInitialized )
 	{
 		m_weaponPanels[nWepSlot][nWepPos] = CreateNewPanel( nWepSlot, nWepPos, pWeapon, bSelected );
+        m_weaponPanels[nWepSlot][nWepPos].JustPickedUp = true;
 	}
 	else
 	{
@@ -146,53 +165,68 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 		m_weaponPanels[nWepSlot][nWepPos].bInitialized = true;
 		m_weaponPanels[nWepSlot][nWepPos].bSelected = bSelected;
 	}
-	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetRenderSize( weapon_icon_wide, weapon_icon_tall );
-	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture( UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7 ) );
-	
-	wchar_t wszWeaponName[256] = L"";
-	
-	if ( pCSWeapon->HasStatTrak() )
-	{
-		g_pVGuiLocalize->ConstructString( wszWeaponName, sizeof( wszWeaponName ),
-		g_pVGuiLocalize->Find( "#Cstrike_WPNHUD_StatTrak" ), 1,
-		g_pVGuiLocalize->Find( pCSWeapon->GetPrintName() ) );
-	}
-	else
-	{
-		const wchar_t *pFound = g_pVGuiLocalize->Find( pCSWeapon->GetPrintName() );
-		if ( pFound )
+    
+    bool bApplyGlow = cl_weapon_icon_blur.GetBool() && bSelected;
+    
+    int glowRadius = 4;
+    
+    Color glowColor = Color( 0, 0, 0, 0 );
+    
+        if ( pSkinDef )
 		{
-			wcsncpy( wszWeaponName, pFound, ARRAYSIZE( wszWeaponName ) - 1 );
-			wszWeaponName[ ARRAYSIZE( wszWeaponName ) - 1 ] = L'\0';
+			glowColor = GetRarityColor( pSkinDef->rarity );
+			
+			DevMsg( "[WeaponSelection] SELECTED weapon: %s | PaintKit: %d | Skin: %s | Rarity: %d | GlowColor: RGB(%d,%d,%d)\n",
+				pCSWeapon->GetClassname(), 
+				iPaintKit, 
+				pSkinDef->szName, 
+				pSkinDef->rarity,
+				glowColor.r(), glowColor.g(), glowColor.b() );
 		}
 		else
 		{
-			g_pVGuiLocalize->ConvertANSIToUnicode( pCSWeapon->GetPrintName(), wszWeaponName, sizeof( wszWeaponName ) );
+			DevMsg( "[WeaponSelection] SELECTED weapon: %s | No skin found, using white glow\n", 
+				pCSWeapon->GetClassname() );
 		}
-	}
-	
-	C_CSPlayer *pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
-	C_CSPlayer *pPrevOwner   = pCSWeapon->GetPreviousOwner();
-	
-	if ( m_weaponPanels[nWepSlot][nWepPos].hCachedOwnerWeapon.Get() != pWeapon )
-	{
-		m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName[0] = L'\0';
-	}
-	
-	const wchar_t *pOwnerName = NULL;
+    
+	m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetRenderSize( weapon_icon_wide, weapon_icon_tall );
+    m_weaponPanels[nWepSlot][nWepPos].pSVGPanel->SetTexture(
+        UTIL_VarArgs( "materials/vgui/weapons/svg/%s.svg", pCSWeapon->GetClassname() + 7 ),
+        bApplyGlow, glowRadius, glowColor );
 
-	if ( pPrevOwner && pPrevOwner != pLocalPlayer )
-	{
-		g_pVGuiLocalize->ConvertANSIToUnicode( pPrevOwner->GetPlayerName(),
-		m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName,
-		sizeof( m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName ) );
-		m_weaponPanels[nWepSlot][nWepPos].hCachedOwnerWeapon = pWeapon;
-		pOwnerName = m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName;
-	}
-	else if ( m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName[0] != L'\0' )
-	{
-		pOwnerName = m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName;
-	}
+    wchar_t wszWeaponName[256];
+    BuildWeaponSkinName( pCSWeapon, pSkinDef, wszWeaponName, sizeof(wszWeaponName) );
+
+    if ( pCSWeapon->HasStatTrak() )
+    {
+        wchar_t wszStatTrak[256];
+        g_pVGuiLocalize->ConstructString( wszStatTrak, sizeof(wszStatTrak),
+            g_pVGuiLocalize->Find( "#Cstrike_WPNHUD_StatTrak" ), 1, wszWeaponName );
+        wcsncpy( wszWeaponName, wszStatTrak, ARRAYSIZE(wszWeaponName) - 1 );
+        wszWeaponName[ ARRAYSIZE(wszWeaponName) - 1 ] = L'\0';
+    }
+
+    C_CSPlayer *pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
+    C_CSPlayer *pPrevOwner   = pCSWeapon->GetPreviousOwner();
+
+    if ( m_weaponPanels[nWepSlot][nWepPos].hCachedOwnerWeapon.Get() != pWeapon )
+    {
+        m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName[0] = L'\0';
+    }
+
+    const wchar_t *pOwnerName = NULL;
+    if ( pPrevOwner && pPrevOwner != pLocalPlayer )
+    {
+        g_pVGuiLocalize->ConvertANSIToUnicode( pPrevOwner->GetPlayerName(),
+            m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName,
+            sizeof( m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName ) );
+        m_weaponPanels[nWepSlot][nWepPos].hCachedOwnerWeapon = pWeapon;
+        pOwnerName = m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName;
+    }
+    else if ( m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName[0] != L'\0' )
+    {
+        pOwnerName = m_weaponPanels[nWepSlot][nWepPos].wszCachedOwnerName;
+    }
 
 	if ( pOwnerName )
 	{
@@ -211,6 +245,60 @@ void CCSHudWeaponSelection::AddWeapon( C_BaseCombatWeapon *pWeapon, bool bSelect
 
 	// force a weapon switch to catch where we got a user message but not the network update, yet
 	m_flUpdateInventoryAt = gpGlobals->curtime + 0.1;
+}
+
+void CCSHudWeaponSelection::BuildWeaponSkinName( CWeaponCSBase *pWeapon, const SkinDefinition_t *pSkinDef, wchar_t *out, int outSizeBytes )
+{
+    wchar_t wszWeapon[128] = L"";
+    wchar_t wszSkin[128] = L"";
+
+    // Weapon name
+    const wchar_t *pWeaponName = g_pVGuiLocalize->Find( pWeapon->GetPrintName() );
+    if ( pWeaponName )
+    {
+        g_pVGuiLocalize->ConstructString(
+            wszWeapon, sizeof(wszWeapon),
+            pWeaponName,
+            0
+        );
+    }
+
+    // item name
+    if ( pSkinDef )
+    {
+        const wchar_t *pSkinName = g_pVGuiLocalize->Find( pSkinDef->szName );
+        if ( pSkinName )
+        {
+            g_pVGuiLocalize->ConstructString(
+                wszSkin, sizeof(wszSkin),
+                pSkinName,
+                0
+            );
+        }
+        else
+        {
+            g_pVGuiLocalize->ConvertANSIToUnicode(
+                pSkinDef->szName,
+                wszSkin,
+                sizeof(wszSkin)
+            );
+        }
+
+        V_snwprintf(
+            out,
+            outSizeBytes / sizeof(wchar_t),
+            L"%ls | %ls",
+            wszWeapon,
+            wszSkin
+        );
+        return;
+    }
+
+    V_wcsncpy(
+        out,
+        wszWeapon,
+        outSizeBytes / sizeof(wchar_t)
+    );
 }
 
 void CCSHudWeaponSelection::RemoveWeapon( int nSlot, int nPos )
@@ -248,17 +336,25 @@ void CCSHudWeaponSelection::RemoveWeapon( int nSlot, int nPos )
 
 void CCSHudWeaponSelection::RemoveAllItems( void )
 {
-	//Remove all items before we exit
-	for ( int i = 0; i < MAX_WEP_SELECT_PANELS; i++ )
-	{
-		for ( int j = 0; j < MAX_WEP_SELECT_POSITIONS; j++ )
-		{
-			//Remove all items before we exit
-			RemoveWeapon( i, j );
-		}
-	}
+    bool savedJustPickedUp[MAX_WEP_SELECT_PANELS][MAX_WEP_SELECT_POSITIONS];
+    for ( int i = 0; i < MAX_WEP_SELECT_PANELS; i++ )
+    {
+        for ( int j = 0; j < MAX_WEP_SELECT_POSITIONS; j++ )
+        {
+            savedJustPickedUp[i][j] = m_weaponPanels[i][j].JustPickedUp;
+            RemoveWeapon( i, j );
+        }
+    }
 
-	V_memset( m_weaponPanels, 0, sizeof( m_weaponPanels ) );
+    V_memset( m_weaponPanels, 0, sizeof( m_weaponPanels ) );
+    
+    for ( int i = 0; i < MAX_WEP_SELECT_PANELS; i++ )
+    {
+        for ( int j = 0; j < MAX_WEP_SELECT_POSITIONS; j++ )
+        {
+            m_weaponPanels[i][j].JustPickedUp = savedJustPickedUp[i][j];
+        }
+    }
 }
 
 WeaponSelectPanel CCSHudWeaponSelection::CreateNewPanel( int nSlot, int nPos, C_BaseCombatWeapon *pWeapon, bool bSelected )
@@ -382,6 +478,7 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 						if ( !pGrenade || (pGrenade && !pGrenade->IsPinPulled() && !pGrenade->IsBeingThrown() && (!pGrenade->GetIsThrown() || pPlayer->GetAmmoCount( pGrenade->GetPrimaryAmmoType() ) > 0)) )
 						{
 							AddWeapon( pNextWeapon, (GetSelectedWeapon() == pNextWeapon) );
+                            m_weaponPanels[i][j].JustPickedUp = false;
 						}
 					}
 					
@@ -403,6 +500,7 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
  							{
  								RemoveWeapon( i, j );
  								bJustRemovedGrenade = true;
+                                 m_weaponPanels[i][j].JustPickedUp = false;
  							}
 
 //							pGrenade = static_cast<CBaseCSGrenade*>( pPanelWeapon );
@@ -490,6 +588,9 @@ void CCSHudWeaponSelection::ShowAndUpdateSelection( int nType, C_BaseCombatWeapo
 void CCSHudWeaponSelection::UpdatePanelPositions( void )
 {
 	SetAlpha( 255 );
+    
+    vgui::AnimationController* pAnim = g_pClientMode->GetViewportAnimationController();
+    const float moveTime = 0.4f;
 
 	int nYPos = 0;
 	int nXPos = 0;
@@ -577,13 +678,52 @@ void CCSHudWeaponSelection::UpdatePanelPositions( void )
 						nYPos -= weapon_icon_slot_margin;
 					}
 				}
+                
+                int currentX = m_weaponPanels[i][j].pSVGPanel->GetXPos();
+                int currentY = m_weaponPanels[i][j].pSVGPanel->GetYPos();
 
-				m_weaponPanels[i][j].pSVGPanel->SetPos( nXPos, nYPos );
-				m_weaponPanels[i][j].pNameLabel->SetPos( nXPos + nIconWide - nNameLabelWide + name_label_xpos, nYPos + name_label_ypos );
+                if ( m_weaponPanels[i][j].bNew && m_weaponPanels[i][j].JustPickedUp )
+                {
+                    m_weaponPanels[i][j].bAnimating = gpGlobals->curtime >= m_weaponPanels[i][j].flAnimationEndTime;
+                    
+                    m_weaponPanels[i][j].pSVGPanel->SetPos(nXPos + nIconWide + 10, nYPos);
+                    pAnim->RunAnimationCommand( m_weaponPanels[i][j].pSVGPanel, "xpos", nXPos, 0.0f, moveTime, vgui::AnimationController::INTERPOLATOR_LINEAR );
+                    
+                    m_weaponPanels[i][j].bNew = false;
+                    m_weaponPanels[i][j].JustPickedUp = false;
+                    
+                    m_weaponPanels[i][j].nTargetX = nXPos;
+                    m_weaponPanels[i][j].nTargetY = nYPos;
+                }
+                else if ( m_weaponPanels[i][j].bNew )
+                {
+                    if ( m_weaponPanels[i][j].bAnimating == false )
+                    {
+                        m_weaponPanels[i][j].pSVGPanel->SetPos(nXPos, nYPos);
+                        m_weaponPanels[i][j].bNew = false;
+                    
+                        m_weaponPanels[i][j].nTargetX = nXPos;
+                        m_weaponPanels[i][j].nTargetY = nYPos;
+                    }
+                }
+                else
+                {
+                    if (m_weaponPanels[i][j].nTargetX != nXPos || m_weaponPanels[i][j].nTargetY != nYPos )
+                    {
+                        pAnim->RunAnimationCommand( m_weaponPanels[i][j].pSVGPanel, "xpos", nXPos, 0.0f, moveTime, vgui::AnimationController::INTERPOLATOR_LINEAR );
+                        pAnim->RunAnimationCommand( m_weaponPanels[i][j].pSVGPanel, "ypos", nYPos, 0.0f, moveTime, vgui::AnimationController::INTERPOLATOR_LINEAR );
+        
+                        m_weaponPanels[i][j].nTargetX = nXPos;
+                        m_weaponPanels[i][j].nTargetY = nYPos;
+                    }
+                }
+                
 				m_weaponPanels[i][j].pNameLabel->SetVisible( bSelected );
-				if ( bShowCountNumber )
+                m_weaponPanels[i][j].pNameLabel->SetPos( nXPos + nIconWide - nNameLabelWide + name_label_xpos, nYPos + name_label_ypos );
+                    
+                if ( bShowCountNumber )
 					m_weaponPanels[i][j].pCountLabel->SetPos( nXPos + count_label_xpos, nYPos + count_label_ypos );
-
+                
 				m_nPrevWepAlignSlot = nSlot;
 			}
 		}
