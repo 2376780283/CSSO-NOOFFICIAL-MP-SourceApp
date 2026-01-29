@@ -17,19 +17,7 @@ class KeyValues;
 #define MAX_DESCRIPTION_NAME 512
 #define MAX_SKIN_MATERIALS 8  // Максимальное количество материалов в одном PaintKit
 
-// =============================================================================
-// ITEM TYPE ENUM (NEW)
-// =============================================================================
-
-enum ESkinItemType
-{
-    SKIN_ITEM_WEAPON = 0,   
-    SKIN_ITEM_GLOVES = 1,
-    SKIN_ITEM_KNIFE = 2,
-    
-    SKIN_ITEM_COUNT
-};
-
+// ======================================================================
 // =============================================================================
 // SKIN DEFINITION (Client-side data)
 // =============================================================================
@@ -256,6 +244,7 @@ struct SkinDefinition_t
         szItemClass[0] = '\0';
         szName[0] = '\0';
         szDescription[0] = '\0';
+        szBaseMaterial[0] = '\0';
         szIconPath[0] = '\0';
         rarity = SKIN_RARITY_COMMON;
     }

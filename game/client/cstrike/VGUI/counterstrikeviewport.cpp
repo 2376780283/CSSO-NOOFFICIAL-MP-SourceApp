@@ -24,6 +24,7 @@
 #include <vgui/IVGui.h>
 #include <vgui/ILocalize.h>
 #include <vgui/VGUI.h>
+#include <ienginevgui.h>
 
 // client dll/engine defines
 #include "hud.h"
