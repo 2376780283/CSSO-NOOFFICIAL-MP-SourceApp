@@ -1123,7 +1123,7 @@ FSReturnCode_t FileSystem_GetFileSystemDLLName( char *pFileSystemDLL, int nMaxLe
 		return SetupFileSystemError( false, FS_INVALID_PARAMETERS, "FileSystem_GetExecutableDir failed." );
 
 	// Assume we'll use local files
-	Q_snprintf( pFileSystemDLL, nMaxLen, "%s%cfilesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
+	Q_snprintf( pFileSystemDLL, nMaxLen, "%s%ccsso_filesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
 
 	#if !defined( _X360 )
 
@@ -1138,7 +1138,7 @@ FSReturnCode_t FileSystem_GetFileSystemDLLName( char *pFileSystemDLL, int nMaxLe
 				_access( pFileSystemDLL, 0 ) != 0
 			#endif
 		) {
-			Q_snprintf( pFileSystemDLL, nMaxLen, "%s%cfilesystem_steam" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
+			Q_snprintf( pFileSystemDLL, nMaxLen, "%s%ccsso_filesystem_steam" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
 			bSteam = true;
 		}
 	#endif
@@ -1148,7 +1148,7 @@ FSReturnCode_t FileSystem_GetFileSystemDLLName( char *pFileSystemDLL, int nMaxLe
 		return SetupFileSystemError( false, FS_INVALID_PARAMETERS, "FileSystem_GetExecutableDir failed." );
 
 	// Assume we'll use local files
-	Q_snprintf( pFileSystemDLL, nMaxLen, "%s%clibfilesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
+	Q_snprintf( pFileSystemDLL, nMaxLen, "%s%clibcsso_filesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
 
 	#if !defined( _X360 )
 		// Use filsystem_steam if it exists?
@@ -1162,7 +1162,7 @@ FSReturnCode_t FileSystem_GetFileSystemDLLName( char *pFileSystemDLL, int nMaxLe
 				_access( pFileSystemDLL, 0 ) != 0
 			#endif
 		) {
-			Q_snprintf( pFileSystemDLL, nMaxLen, "%s%cfilesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
+			Q_snprintf( pFileSystemDLL, nMaxLen, "%s%ccsso_filesystem_stdio" DLL_EXT_STRING, executablePath, CORRECT_PATH_SEPARATOR );
 		}
 	#endif
 
