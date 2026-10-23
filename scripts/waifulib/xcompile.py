@@ -254,6 +254,10 @@ class Android:
 
 	def cflags(self, cxx = False):
 		cflags = []
+		
+		cflags += ['-fno-delete-null-pointer-checks', '-fno-strict-overflow']
+		if self.ndk_rev >= 26:
+			cflags += ['-fstrict-flex-arrays=0']
 
 		if self.ndk_rev <= ANDROID_NDK_SYSROOT_FLAG_MAX:
 			cflags += ['--sysroot=%s' % (self.sysroot())]
