@@ -35,7 +35,8 @@ extern "C" {
 CWebMMaterialRGBTextureRegenerator::CWebMMaterialRGBTextureRegenerator() :
 m_SrcImage(nullptr),
 m_nSourceWidth(0),
-m_nSourceHeight(0)
+m_nSourceHeight(0),
+m_nSourceStride(0)
 {
 }
 
@@ -43,11 +44,12 @@ CWebMMaterialRGBTextureRegenerator::~CWebMMaterialRGBTextureRegenerator()
 {
 }
 
-void CWebMMaterialRGBTextureRegenerator::SetSourceImage(uint8_t *SrcImage, int nWidth, int nHeight)
+void CWebMMaterialRGBTextureRegenerator::SetSourceImage(uint8_t *SrcImage, int nWidth, int nHeight, int nStride)
 {
     m_SrcImage = SrcImage;
     m_nSourceWidth = nWidth;
     m_nSourceHeight = nHeight;
+    m_nSourceStride = nStride;
 }
 
 void CWebMMaterialRGBTextureRegenerator::RegenerateTextureBits(ITexture *pTexture, IVTFTexture *pVTFTexture, Rect_t *pRect)
@@ -80,7 +82,7 @@ void CWebMMaterialRGBTextureRegenerator::RegenerateTextureBits(ITexture *pTextur
     uint8_t *pImageData = pVTFTexture->ImageData();
     int dstStride = pVTFTexture->RowSizeInBytes(0);
     uint8_t *pSrcData = m_SrcImage;
-    int srcStride = m_nSourceWidth * 3;
+    int srcStride = (m_nSourceStride > 0) ? m_nSourceStride : (m_nSourceWidth * 3);
     int rowSize = m_nSourceWidth * 3;
 
     for (int y = 0; y < m_nSourceHeight; y++)
@@ -126,6 +128,8 @@ m_FrameCount(0),
 m_CurrentFrameTimestamp(0),
 m_CurrentFrameNumber(0),
 m_pRGBBuffer(nullptr),
+m_pSwsContext(nullptr),
+m_nRGBStride(0),
 m_LastResult(VideoResult::SUCCESS)
 {
     m_VideoFrameWidth = 0;
@@ -382,12 +386,14 @@ bool CWebMMaterial::OpenWebMMovie(const char *pWebMFileName)
 
     m_pRGBFrame->width = m_VideoFrameWidth;
     m_pRGBFrame->height = m_VideoFrameHeight;
+    m_nRGBStride = m_pRGBFrame->linesize[0];
 
     return true;
 }
 
 void CWebMMaterial::CloseWebMFile()
 {
+    if (m_pSwsContext) { sws_freeContext(m_pSwsContext); m_pSwsContext = nullptr; }
     if (m_pRGBBuffer)
     {
         av_free(m_pRGBBuffer);
@@ -455,7 +461,7 @@ bool CWebMMaterial::CreateProceduralTexture(const char *pTextureName)
         TEXTUREFLAGS_PROCEDURAL | TEXTUREFLAGS_SINGLECOPY | TEXTUREFLAGS_NOLOD);
 
     m_Texture->SetTextureRegenerator(&m_TextureRegen);
-    m_TextureRegen.SetSourceImage(m_pRGBBuffer, m_VideoFrameWidth, m_VideoFrameHeight);
+    m_TextureRegen.SetSourceImage(m_pRGBBuffer, m_VideoFrameWidth, m_VideoFrameHeight, m_nRGBStride);
 
     // Set the max texture coordinate range to match the aspect ratio of the video
     m_TexCordU = (float)m_VideoFrameWidth / (float)txWidth;
@@ -548,16 +554,23 @@ bool CWebMMaterial::DecodeNextFrame()
             return false;
         }
 
-        // Convert to BGR24
-        SwsContext *swsCtx = sws_getContext(m_pCodecContext->width, m_pCodecContext->height, m_pCodecContext->pix_fmt,
-                                              m_VideoFrameWidth, m_VideoFrameHeight, AV_PIX_FMT_BGR24,
-                                              SWS_BILINEAR, nullptr, nullptr, nullptr);
-
-        if (swsCtx)
+        // Convert to BGR24 using a cached context
+        m_pSwsContext = sws_getCachedContext(m_pSwsContext,
+            m_pCodecContext->width, m_pCodecContext->height, m_pCodecContext->pix_fmt,
+            m_VideoFrameWidth, m_VideoFrameHeight, AV_PIX_FMT_BGR24,
+            SWS_BILINEAR, nullptr, nullptr, nullptr);
+        if (m_pSwsContext)
         {
-            sws_scale(swsCtx, (uint8_t const *const *)m_pFrame->data, m_pFrame->linesize, 0, m_pCodecContext->height,
+            int srcRange, dstRange, brightness, contrast, saturation;
+            int *inv_table = nullptr, *table = nullptr;
+            sws_getColorspaceDetails(m_pSwsContext, &inv_table, &srcRange, &table,
+                                     &dstRange, &brightness, &contrast, &saturation);
+            sws_setColorspaceDetails(m_pSwsContext, inv_table, 0, table, 1,
+                                     brightness, contrast, saturation);
+            sws_scale(m_pSwsContext,
+                      (uint8_t const *const *)m_pFrame->data, m_pFrame->linesize, 0,
+                      m_pCodecContext->height,
                       m_pRGBFrame->data, m_pRGBFrame->linesize);
-            sws_freeContext(swsCtx);
         }
 
         m_CurrentFrameNumber++;
