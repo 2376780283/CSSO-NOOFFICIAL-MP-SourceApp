@@ -274,37 +274,46 @@ static bool s_bRunningWithDebugModules = false;
 #else
 #define DEFAULT_LIB_PATH "bin/"
 #endif
+#define CSSO_LIB_PREFIX "csso_"
 
 bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize, const char *pPath, const char *pModuleName )
 {
 	char str[1024];
 	Q_strncpy( str, pModuleName, sizeof(str) );
 	V_SetExtension( str, DLL_EXT_STRING, sizeof(str) );
-	bool bFound = false;
+	// 兼容三种传入：
+	//   "engine"             -> "engine.so"
+	//   "engine.so"          -> "engine.so"
+	//   "libcsso_engine.so"  -> "csso_engine.so"（去掉 lib）
+	const char *pBase = str;
+	if ( strncmp( pBase, "lib", 3 ) == 0 )
+		pBase += 3;
+
+	char strPrefixed[1024];
+	if ( strncmp( pBase, CSSO_LIB_PREFIX, sizeof(CSSO_LIB_PREFIX) - 1 ) == 0 )
+	{
+		Q_strncpy( strPrefixed, pBase, sizeof(strPrefixed) );
+	}
+	else
+	{
+		Q_snprintf( strPrefixed, sizeof(strPrefixed), CSSO_LIB_PREFIX "%s", pBase );
+	}
 
 	struct stat statBuf;
-	Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "lib%s", pPath, str);
-	bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
 
-	if( !bFound )
-	{
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "%s", pPath, str);
-		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
-	}
+	Q_snprintf( pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "lib%s", pPath, strPrefixed );
+	if ( stat( pModuleAbsolutePath, &statBuf ) == 0 ) return true;
 
-	if( !bFound )
-	{
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, str);
-		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
-	}
+	Q_snprintf( pModuleAbsolutePath, AbsolutePathSize, "%s/" DEFAULT_LIB_PATH "%s", pPath, strPrefixed );
+	if ( stat( pModuleAbsolutePath, &statBuf ) == 0 ) return true;
 
-	if( !bFound )
-	{
-		Q_snprintf(pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, str);
-		bFound |= stat(pModuleAbsolutePath, &statBuf) == 0;
-	}
+	Q_snprintf( pModuleAbsolutePath, AbsolutePathSize, "%s/lib%s", pPath, strPrefixed );
+	if ( stat( pModuleAbsolutePath, &statBuf ) == 0 ) return true;
 
-	return bFound;
+	Q_snprintf( pModuleAbsolutePath, AbsolutePathSize, "%s/%s", pPath, strPrefixed );
+	if ( stat( pModuleAbsolutePath, &statBuf ) == 0 ) return true;
+
+	return false;
 }
 
 #endif
@@ -316,9 +325,6 @@ bool foundLibraryWithPrefix( char *pModuleAbsolutePath, size_t AbsolutePathSize,
 //-----------------------------------------------------------------------------
 CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NOFLAGS (0) */ )
 {
-	// If using the Steam filesystem, either the DLL must be a minimum footprint
-	// file in the depot (MFP) or a filesystem GetLocalCopy() call must be made
-	// prior to the call to this routine.
 	char szCwd[1024];
 #ifdef POSIX
 	char szModuleName[1024] = { 0 };
@@ -327,7 +333,6 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 
 	if ( !Q_IsAbsolutePath( pModuleName ) )
 	{
-		// full path wasn't passed in, using the current working dir
 		_getcwd( szCwd, sizeof( szCwd ) );
 		if ( IsX360() )
 		{
@@ -386,15 +391,38 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 		Q_strncpy( szModuleName, pModuleName, sizeof(szModuleName) );
 		V_SetExtension( szModuleName, DLL_EXT_STRING, sizeof(szModuleName) );
 
-		struct stat statBuf;
-		bool bFound = stat(szModuleName, &statBuf) == 0;
+		// ===== 绝对路径分支也强制加 libcsso_ 前缀，不回退旧名 =====
+		const char *pSlash = strrchr( szModuleName, '/' );
+		const char *pBase  = pSlash ? ( pSlash + 1 ) : szModuleName;
+		size_t      dirLen = (size_t)( pBase - szModuleName );
 
-		if( !bFound )
+		char szForced[2048];
+		if( strncmp( pBase, "lib" CSSO_LIB_PREFIX, sizeof("lib" CSSO_LIB_PREFIX) - 1 ) == 0 )
 		{
-			Warning("Can't find module - %s\n", pModuleName);
+			// 已经是 libcsso_xxx.so，保持原样
+			Q_strncpy( szForced, szModuleName, sizeof(szForced) );
+		}
+		else if( strncmp( pBase, "lib", 3 ) == 0 )
+		{
+			// libxxx.so -> libcsso_xxx.so
+			Q_snprintf( szForced, sizeof(szForced), "%.*slib" CSSO_LIB_PREFIX "%s",
+			            (int)dirLen, szModuleName, pBase + 3 );
+		}
+		else
+		{
+			// xxx.so -> csso_xxx.so
+			Q_snprintf( szForced, sizeof(szForced), "%.*s" CSSO_LIB_PREFIX "%s",
+			            (int)dirLen, szModuleName, pBase );
+		}
+
+		struct stat statBuf;
+		if( stat( szForced, &statBuf ) != 0 )
+		{
+			Warning("Can't find module - %s (forced=%s)\n", pModuleName, szForced);
 			return reinterpret_cast<CSysModule *>(hDLL);
 		}
 
+		Q_strncpy( szModuleName, szForced, sizeof(szModuleName) );
 		Msg("LoadLibrary: path: %s\n", szModuleName);
 #endif
 	}
@@ -402,40 +430,36 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 
 	if ( !hDLL )
 	{
-		// full path failed, let LoadLibrary() try to search the PATH now
-		hDLL = Sys_LoadLibrary( pModuleName, flags );
+#ifdef POSIX
+		const char *pLoadPath = ( Q_IsAbsolutePath( pModuleName ) && szModuleName[0] )
+		                      ? szModuleName
+		                      : pModuleName;
+#else
+		const char *pLoadPath = pModuleName;
+#endif
+		hDLL = Sys_LoadLibrary( pLoadPath, flags );
 #if defined( _DEBUG )
 		if ( !hDLL )
 		{
-// So you can see what the error is in the debugger...
 #if defined( _WIN32 ) && !defined( _X360 )
 			char *lpMsgBuf;
-			
 			FormatMessage( 
-				FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-				FORMAT_MESSAGE_FROM_SYSTEM | 
-				FORMAT_MESSAGE_IGNORE_INSERTS,
-				NULL,
-				GetLastError(),
-				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
-				(LPTSTR) &lpMsgBuf,
-				0,
-				NULL 
-			);
-
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+				NULL, GetLastError(),
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				(LPTSTR) &lpMsgBuf, 0, NULL );
 			LocalFree( (HLOCAL)lpMsgBuf );
 #elif defined( _X360 )
 			DWORD error = GetLastError();
 			Msg( "Error(%d) - Failed to load %s:\n", error, pModuleName );
 #else
 			Msg( "Failed to load %s: %s\n", pModuleName, dlerror() );
-#endif // _WIN32
+#endif
 		}
 #endif // DEBUG
 	}
 
 #if !defined(LINUX)
-	// If running in the debugger, assume debug binaries are okay, otherwise they must run with -allowdebug
 	if ( Sys_GetProcAddress( hDLL, "BuiltDebug" ) )
 	{
 		if ( !IsX360() && hDLL && 
@@ -450,15 +474,6 @@ CSysModule *Sys_LoadModule( const char *pModuleName, Sys_Flags flags /* = SYS_NO
 		if ( !s_bRunningWithDebugModules )
 		{
 			s_bRunningWithDebugModules = true;
-			
-#if 0 //def IS_WINDOWS_PC
-			char chMemoryName[ MAX_PATH ];
-			DebugKernelMemoryObjectName( chMemoryName );
-			
-			(void) CreateFileMapping( INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 1024, chMemoryName );
-			// Created a shared memory kernel object specific to process id
-			// Existence of this object indicates that we have debug modules loaded
-#endif
 		}
 	}
 #endif
