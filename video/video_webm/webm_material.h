@@ -17,7 +17,6 @@
 class IFileSystem;
 class IMaterialSystem;
 class CWebMMaterial;
-struct SwsContext;
 
 //-----------------------------------------------------------------------------
 // Global interfaces
@@ -57,7 +56,7 @@ public:
     CWebMMaterialRGBTextureRegenerator();
     ~CWebMMaterialRGBTextureRegenerator();
 
-    void SetSourceImage(uint8_t *SrcImage, int nWidth, int nHeight, int nStride);
+    void SetSourceImage(uint8_t *SrcImage, int nWidth, int nHeight);
 
     virtual void RegenerateTextureBits(ITexture *pTexture, IVTFTexture *pVTFTexture, Rect_t *pRect);
     virtual void Release();
@@ -66,7 +65,6 @@ private:
     uint8_t *m_SrcImage;
     int m_nSourceWidth;
     int m_nSourceHeight;
-    int m_nSourceStride;
 };
 
 // -----------------------------------------------------------------------------
@@ -196,8 +194,6 @@ private:
     int m_CurrentFrameNumber;
 
     uint8_t *m_pRGBBuffer;
-    SwsContext *m_pSwsContext;
-    int m_nRGBStride;
 };
 
 #endif // WEBM_MATERIAL_H
