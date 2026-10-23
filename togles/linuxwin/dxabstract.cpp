@@ -5755,11 +5755,12 @@ HRESULT IDirect3DDevice9::SetTransform(D3DTRANSFORMSTATETYPE State,CONST D3DMATR
 	return S_OK;
 }
 
-HRESULT IDirect3DDevice9::SetTextureStageState(DWORD Stage,D3DTEXTURESTAGESTATETYPE Type,DWORD Value)
+HRESULT IDirect3DDevice9::SetTextureStageState(DWORD Stage, D3DTEXTURESTAGESTATETYPE Type, DWORD Value)
 {
 	GL_BATCH_PERF_CALL_TIMER;
 	GL_PUBLIC_ENTRYPOINT_CHECKS( this );
-	DXABSTRACT_BREAK_ON_ERROR();
+	// DXABSTRACT_BREAK_ON_ERROR(); // crash on togles
+	GLMPRINTF(("-X- IDirect3DDevice9::SetTextureStageState - ignored (Stage=%d, Type=%d, Value=%d)", Stage, Type, Value));
 	return S_OK;
 }
 
