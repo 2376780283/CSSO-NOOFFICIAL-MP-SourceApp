@@ -53,6 +53,16 @@ ConVar gl_finish( "gl_finish", "0" );
 ConVar sdl_double_click_size( "sdl_double_click_size", "2" );
 ConVar sdl_double_click_time( "sdl_double_click_time", "400" );
 
+#if defined(ANDROID)
+// -----------------------------------------------------------------------------
+// Host callbacks implemented by the launcher application (main.cpp).
+// Declared as ordinary C++ external symbols so the linker enforces
+// the launcher provides them at build time.
+// -----------------------------------------------------------------------------
+extern void NotifyMouseVisibilityChanged(bool bVisible);
+extern void NotifyCursorChanged(SDL_Cursor *hCursor);
+#endif
+
 #if defined( DX_TO_GL_ABSTRACTION )
 COpenGLEntryPoints *gGL = NULL;
 #endif
@@ -676,7 +686,19 @@ InitReturnVal_t CSDLMgr::Init()
 	//  GL entry points, but the game hasn't made a window yet. So it's time
 	//  to make a window! We make a 640x480 one here, and later, when asked
 	//  to really actually make a window, we just resize the one we built here.
-	if ( !CreateHiddenGameWindow( "", 1280, 720 ) )
+		
+	// For Android and high-resolution devices, detect actual screen dimensions
+	uint initWidth = 1280, initHeight = 720;
+#if defined(ANDROID)
+	uint refreshHz = 0;
+	GetNativeDisplayInfo( -1, initWidth, initHeight, refreshHz );
+	
+	// Ensure minimum viable dimensions for modern devices
+	if ( initWidth < 1024 ) initWidth = 1024;
+	if ( initHeight < 720 ) initHeight = 720;
+#endif
+
+	if ( !CreateHiddenGameWindow( "", initWidth, initHeight ) )
 		Error( "CreateGameWindow failed" );
 
 	SDL_HideWindow( m_Window );
@@ -1106,6 +1128,9 @@ void CSDLMgr::SetMouseVisible( bool bState )
 	{
 		m_bCursorVisible = bState;
 		m_bSetMouseVisibleCalled = true;
+#if defined(ANDROID)		
+		NotifyMouseVisibilityChanged(bState);
+#endif		
 	}
 }
 
@@ -1123,6 +1148,9 @@ void CSDLMgr::SetMouseCursor( SDL_Cursor *hCursor )
 		else
 		{
 			m_hCursor = hCursor;
+#if defined(ANDROID)			
+			NotifyCursorChanged(hCursor);
+#endif			
 		}
 		m_bSetMouseCursorCalled = true;
 	}
@@ -1544,6 +1572,18 @@ void CSDLMgr::MoveWindow( int x, int y )
 void CSDLMgr::SizeWindow( int width, int tall )
 {
 	SDLAPP_FUNC;
+
+	// Android: Validate and correct invalid dimensions
+#if defined(ANDROID)
+	if ( width <= 0 || tall <= 0 )
+	{
+		uint screenW = 0, screenH = 0, refresh = 0;
+		GetNativeDisplayInfo( -1, screenW, screenH, refresh );
+		
+		if ( screenW > 0 ) width = screenW;
+		if ( screenH > 0 ) tall = screenH;
+	}
+#endif
 
 	if ( ( m_WindowWidth == width ) &&
 		 ( m_WindowHeight == tall ) &&
@@ -2110,6 +2150,32 @@ void CSDLMgr::GetNativeDisplayInfo( int nDisplay, uint &nWidth, uint &nHeight, u
 	nRefreshHz = mode.refresh_rate;
 	nWidth = mode.w;
 	nHeight = mode.h;
+	// Android: Validate resolution for high-DPI devices
+	// Some devices return 0 due to SDL timing issues, attempt fallback
+#if defined(ANDROID)
+	if ( nWidth == 0 || nHeight == 0 )
+	{
+		// Try to get dimensions from primary window if it exists
+		SDL_Window* primaryWindow = SDL_GetWindowFromID(1);
+		if ( primaryWindow != NULL )
+		{
+			int w, h;
+			SDL_GetWindowSize( primaryWindow, &w, &h );
+			if ( w > 0 && h > 0 )
+			{
+				nWidth = w;
+				nHeight = h;
+			}
+		}
+	}
+	
+	// Final fallback to sensible defaults
+	if ( nWidth == 0 || nHeight == 0 )
+	{
+		nWidth = 1024;
+		nHeight = 768;
+	}
+#endif
 }
 
 
@@ -2134,7 +2200,16 @@ void CSDLMgr::DisplayedSize( uint &width, uint &height )
 	SDLAPP_FUNC;
 
 	int w, h;
-	SDL_GetWindowSize(m_Window, &w, &h);
+	SDL_GetWindowSize(m_Window, &w, &h);	
+#if defined(ANDROID)
+	if ( w <= 0 || h <= 0 )
+	{
+		uint displayWidth = 0, displayHeight = 0, refreshHz = 0;
+		GetNativeDisplayInfo( -1, displayWidth, displayHeight, refreshHz );
+		w = displayWidth;
+		h = displayHeight;
+	}
+#endif	
 	width = (uint) w;
 	height = (uint) h;
 }

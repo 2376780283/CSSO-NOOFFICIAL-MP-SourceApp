@@ -154,6 +154,12 @@ projects={
 	]
 }
 
+# ============================================================
+# 内部库统一前缀（tier0 -> libcsso_tier0.so）
+# 必须与加载器侧 CSSO_LIB_PREFIX 宏（public/interface.cpp）一致
+# ============================================================
+CSSO_LIB_PREFIX = 'csso_'
+
 @Configure.conf
 def check_pkg(conf, package, uselib_store, fragment, *k, **kw):
 	errormsg = '{0} not available! Install {0} development package. Also you may need to set PKG_CONFIG_PATH environment variable'.format(package)
@@ -636,6 +642,26 @@ def configure(conf):
 
 def build(bld):
 	os.environ["CCACHE_DIR"] = os.path.abspath('.ccache/'+bld.env.COMPILER_CC+'/'+bld.env.DEST_OS+'/'+bld.env.DEST_CPU)
+
+	# ===== 给所有内部 stlib/shlib 的 target 统一加 csso_ 前缀 =====
+	# 只改 target 不改 name，use 依赖关系完全不受影响；
+	# 由于 bld 在整个递归过程中是同一实例，一次 patch 全局生效。
+	if not getattr(bld, '_csso_prefix_hooked', False):
+		bld._csso_prefix_hooked = True
+
+		def _make_hook(orig):
+			def _hooked(*args, **kwargs):
+				tgt = kwargs.get('target')
+				if isinstance(tgt, str):
+					kwargs['target'] = CSSO_LIB_PREFIX + tgt
+				elif isinstance(tgt, (list, tuple)):
+					kwargs['target'] = [CSSO_LIB_PREFIX + t for t in tgt]
+				return orig(*args, **kwargs)
+			return _hooked
+
+		for _meth in ('stlib', 'shlib'):
+			setattr(bld, _meth, _make_hook(getattr(bld, _meth)))
+	# ===== end csso prefix hook =====
 
 	if bld.env.DEST_OS in ['win32', 'android'] and not bld.env.TESTS:
 		sdl_name = 'SDL2.dll' if bld.env.DEST_OS == 'win32' else 'libSDL2.so'
