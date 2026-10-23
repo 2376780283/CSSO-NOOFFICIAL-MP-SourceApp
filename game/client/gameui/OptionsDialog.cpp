@@ -84,10 +84,8 @@ COptionsDialog::COptionsDialog(vgui::Panel *parent) : PropertyDialog(parent, "Op
 	{
 		AddPage(new COptionsSubPortal(this), "#GameUI_Portal");
 	}
-#ifndef ANDROID
 	AddPage(new COptionsSubKeyboard(this), "#GameUI_Keyboard");
 	AddPage(new COptionsSubMouse(this), "#GameUI_Mouse");
-#endif
 #ifdef ANDROID
 	AddPage(new COptionsSubTouch(this), "Touch");
    AddPage(new ClientModGyroMenu(this), "#GameUI_Gyro");
