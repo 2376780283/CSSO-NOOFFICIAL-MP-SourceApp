@@ -4,19 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       ndk_version:
-<<<<<<< HEAD
         description: 'Android NDK version (xcompile.py supported: r10e / r19c / r20b)'
         required: true
         default: 'r10e'
         type: choice
         options:
           - r10e
-=======
-        description: 'Android NDK version'
-        required: true
-        default: 'r28c'
-        type: string
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
       build_type:
         description: 'Build type'
         required: true
@@ -31,17 +24,8 @@ on:
         default: 'auto'
         type: choice
         options:
-<<<<<<< HEAD
           - auto
           - csso
-=======
-          - csso
-      android_api:
-        description: 'Android API level'
-        required: true
-        default: '29'
-        type: string
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
 
 concurrency:
   group: build-android-${{ github.ref_name }}
@@ -82,11 +66,7 @@ jobs:
           fi
 
           case "$BRANCH" in
-<<<<<<< HEAD
-            CSSO-NOOFFICIAL-MP-SourceApp|Clang11-Build-Script)
-=======
-            CSSO-NOOFFICIAL-MP-SourceApp)
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
+            CSSO-NOOFFICIAL-MP-SourceApp|Clang11-Build-Script|1.3-Update)
               GAMES_JSON=$(jq -nc --arg b "$BRANCH" \
                 '[{"game":"csso","branch":$b}]')
               ;;
@@ -119,7 +99,6 @@ jobs:
         with:
           python-version: '3.12'
 
-<<<<<<< HEAD
       - name: Install system dependencies
         run: |
           sudo apt-get update -qq
@@ -235,110 +214,11 @@ jobs:
           echo "Install..."
           echo "========================================"
           python3 ./waf install -j"$(nproc)"
-=======
-      - name: Install system dependencies & ccache
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ccache jq
-          ccache --version
-          echo "CPU cores: $(nproc)"
-
-      - name: Configure ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ${{ runner.os }}-${{ matrix.game.game }}-${{ inputs.build_type }}-ccache
-          max-size: 2G
-          save: ${{ github.ref_name == 'default' }}
-
-      - name: Locate or download Android NDK
-        id: ndk
-        env:
-          NDK_VER: ${{ inputs.ndk_version || 'r28c' }}
-        run: |
-          NDK_RELEASE_NAME="28.2.13676358"
-          NDK_SEARCH_NAME="28.*"
-
-          echo "Looking for Android NDK $NDK_VER..."
-
-          NDK_ROOT="/usr/local/lib/android/sdk/ndk"
-          FOUND=""
-          if [ -d "$NDK_ROOT" ]; then
-            for d in "$NDK_ROOT"/$NDK_SEARCH_NAME; do
-              if [ -d "$d" ] && grep -q "Pkg.ReleaseName = $NDK_RELEASE_NAME" "$d/source.properties" 2>/dev/null; then
-                FOUND="$d"
-                break
-              fi
-            done
-          fi
-
-          if [ -n "$FOUND" ]; then
-            echo "Found pre-installed NDK at: $FOUND"
-            echo "ndk_path=$FOUND" >> $GITHUB_OUTPUT
-          else
-            CACHE_DIR="${{ github.workspace }}/android-ndk-$NDK_VER"
-            if [ ! -d "$CACHE_DIR" ]; then
-              echo "Downloading android-ndk-$NDK_VER..."
-              curl -sSLf "https://dl.google.com/android/repository/android-ndk-$NDK_VER-linux.zip" -o ndk.zip
-              unzip -q ndk.zip
-              rm ndk.zip
-            fi
-            echo "ndk_path=$CACHE_DIR" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Configure, Build & Install
-        env:
-          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk_path }}
-          BUILD_TYPE: ${{ inputs.build_type || 'release' }}
-          ANDROID_API: ${{ inputs.android_api || '29' }}
-          CURRENT_GAME: ${{ matrix.game.game }}
-        run: |
-          echo "========================================"
-          echo "Building Game: $CURRENT_GAME"
-          echo "NDK Path: $ANDROID_NDK_HOME"
-          echo "Build Type: $BUILD_TYPE"
-          echo "Android API: $ANDROID_API"
-          echo "ccache dir: $(ccache --get-config cache_dir)"
-          echo "Parallel jobs: $(nproc)"
-          echo "========================================"
-
-          INSTALL_DIR="${{ github.workspace }}/android_build_${CURRENT_GAME}"
-
-          python3 ./waf configure \
-            -T "$BUILD_TYPE" \
-            --prefix="$INSTALL_DIR" \
-            --android=aarch64,llvm,"$ANDROID_API" \
-            --target=android_build \
-            --disable-warns \
-            --togles \
-            --build-games="$CURRENT_GAME"
-
-          echo "========================================"
-          echo "Starting build for $CURRENT_GAME..."
-          echo "========================================"
-
-          python3 ./waf build -j"$(nproc)"
-
-          echo "========================================"
-          echo "Installing $CURRENT_GAME..."
-          echo "========================================"
-
-          export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
-
-          if [ "$BUILD_TYPE" = "release" ]; then
-            python3 ./waf install --strip
-          else
-            python3 ./waf install
-          fi
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
 
       - name: Verify & List Output Artifacts
         run: |
           INSTALL_DIR="${{ github.workspace }}/android_build_${{ matrix.game.game }}"
-<<<<<<< HEAD
           echo "=== $INSTALL_DIR ==="
-=======
-          echo "=== Artifacts for ${{ matrix.game.game }} ==="
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
           ls -la "$INSTALL_DIR"
           echo ""
           echo "=== Total size ==="
@@ -346,15 +226,12 @@ jobs:
           echo ""
           echo "=== .so files ==="
           find "$INSTALL_DIR" -name "*.so" -exec ls -lh {} \;
-<<<<<<< HEAD
           echo ""
           echo "=== SONAME / NEEDED 抽样（验证 apply_android_soname 生效） ==="
           for so in $(find "$INSTALL_DIR" -name "*.so" | head -5); do
             echo "--- $so"
             readelf -d "$so" 2>/dev/null | grep -E 'SONAME|NEEDED' || true
           done
-=======
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
@@ -362,8 +239,4 @@ jobs:
           name: android-aarch64-${{ github.ref_name }}-${{ matrix.game.game }}-${{ inputs.build_type || 'release' }}
           path: ${{ github.workspace }}/android_build_${{ matrix.game.game }}/
           if-no-files-found: error
-<<<<<<< HEAD
           retention-days: 2
-=======
-          retention-days: 30
->>>>>>> bc2f052a (SourceApp-modified-Android:应用SourceApp的修复)
