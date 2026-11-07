@@ -6918,10 +6918,7 @@ bool CCSPlayer::ClientCommand( const CCommand &args )
 		
 		m_bIsHoldingLookAtWeapon = true;
 
-		if ( ShouldRunRateLimitedCommand( args ) )
-		{
-			LookAtHeldWeapon();
-		}
+		LookAtHeldWeapon();
 
 		return true;
 	}
