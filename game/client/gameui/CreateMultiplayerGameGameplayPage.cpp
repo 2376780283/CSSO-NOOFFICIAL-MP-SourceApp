@@ -10,6 +10,8 @@
 #include <time.h>
 
 #include "CreateMultiplayerGameGameplayPage.h"
+#include "CreateMultiplayerGameServerPage.h"
+#include "gametypes.h"
 
 using namespace vgui;
 
@@ -111,8 +113,26 @@ const char *CCreateMultiplayerGameGameplayPage::GetValue(const char *cvarName, c
 //-----------------------------------------------------------------------------
 void CCreateMultiplayerGameGameplayPage::OnApplyChanges()
 {
-	PropertySheet* pParent = dynamic_cast<PropertySheet*>(GetParent());
-	if ( pParent && !pParent->IsPageEnabled( "GameplayPage" ) )
+	// PropertySheet::IsPageEnabled("GameplayPage") 按 tab 显示文本匹配（tab 文本是
+	// "#GameUI_Game"，不是 "GameplayPage"），所以那个判断永远返回 false，
+	// 本函数从不执行，Gameplay 页设置既不写入也不生效。
+	// 改为通过 ServerPage 读实时的 game type：只在 Custom 模式下保存。
+	PropertySheet *pParent = dynamic_cast<PropertySheet *>( GetParent() );
+	if ( !pParent )
+		return;
+
+	bool bCustom = false;
+	for ( int i = 0; i < pParent->GetNumPages(); ++i )
+	{
+		CCreateMultiplayerGameServerPage *pServerPage =
+			dynamic_cast<CCreateMultiplayerGameServerPage *>( pParent->GetPage( i ) );
+		if ( pServerPage )
+		{
+			bCustom = ( pServerPage->GetGameTypeID() == CS_GameType_Custom );
+			break;
+		}
+	}
+	if ( !bCustom )
 		return;
 
 	// Get the values from the controls
