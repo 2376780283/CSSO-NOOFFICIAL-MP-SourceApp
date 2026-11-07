@@ -49,8 +49,6 @@ $Project "Client (CStrike)"
 		$File    "cstrike\SkinProcessor.cpp"
 		$File    "cstrike\SkinProcessor.h"
 		$File    "c_sunlightshadowcontrol.cpp"
-		$File	"c_env_cascade_light.cpp"
-		$File	"C_Env_Cascade_Light.h"
 		
 		$Folder	"CounterStrike DLL"
 		{
