@@ -440,7 +440,7 @@ int CCSLoadout::ApplyKnifeSkin( CCSPlayer* pPlayer, int team )
 			break;
 	}
 
-	return skin - 1; // arrays are started with index 0 not 1
+	return ( skin > 0 ) ? ( skin - 1 ) : 0; // arrays are started with index 0 not 1
 }
 
 bool CCSLoadout::HasAgentSet( CCSPlayer* pPlayer, int team )

@@ -431,7 +431,21 @@ int C_BaseViewModel::DrawModel( int flags )
 	}
 	else
 	{
+		IMaterial *pSkinMat = NULL;
+		CWeaponCSBase *pCSWeapon = pPlayer ? dynamic_cast<CWeaponCSBase *>( pPlayer->GetActiveWeapon() ) : NULL;
+		C_CSPlayer *pOwnerCS = dynamic_cast<C_CSPlayer *>( GetOwner() );
+		if ( pCSWeapon && pOwnerCS )
+		{
+			int iPaintKit = CSLoadout()->IsKnife( pCSWeapon->GetCSWeaponID() )
+				? g_pCSLoadout->ApplyKnifeSkin( pOwnerCS, pOwnerCS->GetTeamNumber() )
+				: pCSWeapon->GetPaintKit();
+			pSkinMat = g_SkinDatabase.GetSkinMaterial( iPaintKit );
+		}
+		if ( pSkinMat )
+			pWeapon->SetMaterialOverride( pSkinMat );
 		ret = BaseClass::DrawModel( flags );
+		if ( pSkinMat )
+			pWeapon->SetMaterialOverride( nullptr );
 	}
 
 	pRenderContext->CullMode( MATERIAL_CULLMODE_CCW );
@@ -473,34 +487,6 @@ int C_BaseViewModel::DrawModel( int flags )
 		}
 	}
     
-    CWeaponCSBase* pCSWeapon = dynamic_cast<CWeaponCSBase*>( pPlayer->GetActiveWeapon() );
-        if ( !CSLoadout()->IsKnife( pCSWeapon->GetCSWeaponID() ) )
-        {
-            C_CSPlayer *pPlayer = dynamic_cast<C_CSPlayer*>( GetOwner() );
-            int iPaintKit = pCSWeapon->GetPaintKit();
-            IMaterial* pMat = g_SkinDatabase.GetSkinMaterial( iPaintKit );
-            if ( !pMat )
-            return ret;
-            
-            pWeapon->SetMaterialOverride( pMat );
-            BaseClass::DrawModel(flags);
-            pWeapon->SetMaterialOverride(nullptr);
-        }
-        else
-        {
-            C_CSPlayer *pPlayer = dynamic_cast<C_CSPlayer*>( GetOwner() );
-            if ( !pPlayer )
-            return ret;
-            int iPaintKit = g_pCSLoadout->ApplyKnifeSkin( pPlayer, pPlayer->GetTeamNumber() );
-            IMaterial* pMat = g_SkinDatabase.GetSkinMaterial( iPaintKit );
-        
-            if ( !pMat )
-            return ret;
-
-            pWeapon->SetMaterialOverride( pMat );
-            BaseClass::DrawModel(flags);
-            pWeapon->SetMaterialOverride(nullptr);
-        }
 
 	return ret;
 }

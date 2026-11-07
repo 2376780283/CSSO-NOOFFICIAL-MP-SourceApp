@@ -68,6 +68,7 @@ CFlashlightEffectManager & FlashlightEffectManager()
 //-----------------------------------------------------------------------------
 CFlashlightEffect::CFlashlightEffect(int nEntIndex, const char *pszTextureName, float flFov, float flFarZ, float flLinearAtten )
 {
+	m_textureName[0] = 0;
 	m_FlashlightHandle = CLIENTSHADOW_INVALID_HANDLE;
 	m_nEntIndex = nEntIndex;
     

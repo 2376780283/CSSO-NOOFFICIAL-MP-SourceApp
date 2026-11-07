@@ -204,7 +204,7 @@ RecvPropBool( RECVINFO( m_bSilencerOn ) ),
 RecvPropTime( RECVINFO( m_flDoneSwitchingSilencer ) ),
 RecvPropTime( RECVINFO( m_flPostponeFireReadyTime ) ),
 RecvPropBool( RECVINFO( m_bStatTrak ) ),
-RecvPropBool( RECVINFO( m_iPaintKit ) ),
+RecvPropInt( RECVINFO( m_iPaintKit ) ),
 RecvPropInt( RECVINFO( m_nOriginalOwnerIndex ) ),
 RecvPropInt( RECVINFO( m_iIronSightMode ) ),
 #endif
