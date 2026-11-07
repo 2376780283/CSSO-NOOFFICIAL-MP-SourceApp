@@ -40,7 +40,7 @@ bool CCSkinDatabase::Initialize()
     
     DevMsg("[SkinDB] Initializing skin database...\n");
     
-    // load database like CS:GO's scripts/items_game.txt
+    // Загружаем базу данных скинов
     bool bSuccess = LoadFromFile("scripts/skins.txt");
     
     if (bSuccess && m_SkinDefinitions.Count() > 0)
@@ -65,17 +65,19 @@ bool CCSkinDatabase::LoadFromFile(const char* pszFilePath)
         return false;
     }
     
-    // filesystem!!!
+    // Проверяем filesystem
     if (!filesystem)
     {
         Warning("[SkinDB] Filesystem is NULL!\n");
         return false;
     }
     
+    // Проверяем существование файла
     if (!filesystem->FileExists(pszFilePath, "MOD"))
     {
         DevMsg("[SkinDB] File not found: %s\n", pszFilePath);
         
+        // Показываем полный путь для отладки
         char szFullPath[MAX_PATH];
         filesystem->RelativePathToFullPath(pszFilePath, "MOD", szFullPath, sizeof(szFullPath));
         DevMsg("[SkinDB] Full path: %s\n", szFullPath);
@@ -83,6 +85,7 @@ bool CCSkinDatabase::LoadFromFile(const char* pszFilePath)
         return false;
     }
     
+    // Загружаем KeyValues
     KeyValues* pKV = new KeyValues("Skins");
     if (!pKV)
     {
@@ -101,14 +104,17 @@ bool CCSkinDatabase::LoadFromFile(const char* pszFilePath)
     
     int iLoadedCount = 0;
     
+    // Парсим каждый скин
     for (KeyValues* pSkin = pKV->GetFirstSubKey(); pSkin; pSkin = pSkin->GetNextKey())
     {
         SkinDefinition_t def;
         
         if (ParseSkinDefinition(pSkin, def))
         {
+            // Добавляем в основную базу
             m_SkinDefinitions.Insert(def.iPaintKit, def);
             
+            // Индексируем по оружию
             bool bFound = false;
             FOR_EACH_VEC(m_WeaponSkins, i)
             {
@@ -138,9 +144,6 @@ bool CCSkinDatabase::LoadFromFile(const char* pszFilePath)
     return iLoadedCount > 0;
 }
 
-// =============================================================================
-// Feb 06 2026, adding multiple load materials like "composite_texture" from CS:GO
-// =============================================================================
 bool CCSkinDatabase::ParseSkinDefinition(KeyValues* pKV, SkinDefinition_t& def)
 {
     if (!pKV)
@@ -164,6 +167,7 @@ bool CCSkinDatabase::ParseSkinDefinition(KeyValues* pKV, SkinDefinition_t& def)
         return false;
     }
     
+    // Название скина (ОБЯЗАТЕЛЬНОЕ)
     const char* pszName = pKV->GetString("name", nullptr);
     if (!pszName || !pszName[0])
     {
@@ -175,70 +179,34 @@ bool CCSkinDatabase::ParseSkinDefinition(KeyValues* pKV, SkinDefinition_t& def)
     const char* szDescription = pKV->GetString("description", nullptr);
     Q_strncpy(def.szDescription, szDescription, sizeof(def.szDescription));
     
-    //NEWNEW: Item definition, it helps me to find specific items for inventory
-    
-    const char* pszItemType = pKV->GetString("item_type", nullptr);
-    if (pszItemType && pszItemType[0])
+    // Оружие (ОБЯЗАТЕЛЬНОЕ)
+    const char* pszWeapon = pKV->GetString("weapon", nullptr);
+    if (!pszWeapon || !pszWeapon[0])
     {
-        if (Q_stricmp(pszItemType, "gloves") == 0 || Q_stricmp(pszItemType, "glove") == 0)
-        {
-            def.itemType = SKIN_ITEM_GLOVES;
-        }
-        else if (Q_stricmp(pszItemType, "knife") == 0)
-        {
-            def.itemType = SKIN_ITEM_KNIFE;
-        }
-        else if (Q_stricmp(pszItemType, "weapon") == 0)
-        {
-            def.itemType = SKIN_ITEM_WEAPON;
-        }
-        else
-        {
-            Warning("[SkinDB] Skin %d (%s) has unknown item_type: %s, defaulting to weapon\n", 
-                    def.iPaintKit, def.szName, pszItemType);
-            def.itemType = SKIN_ITEM_WEAPON;
-        }
+        Warning("[SkinDB] Skin %d (%s) has no weapon\n", def.iPaintKit, def.szName);
+        return false;
     }
-    else
+    def.weaponID = AliasToWeaponID(pszWeapon);
+    if (def.weaponID == WEAPON_NONE)
     {
-        def.itemType = SKIN_ITEM_WEAPON;
+        Warning("[SkinDB] Skin %d (%s) has invalid weapon: %s\n", def.iPaintKit, def.szName, pszWeapon);
+        return false;
     }
     
-    if (def.itemType == SKIN_ITEM_GLOVES)
+    // Базовый материал (ОБЯЗАТЕЛЬНОЕ для patch system)
+    const char* pszBaseMaterial = pKV->GetString("base", nullptr);
+    if (!pszBaseMaterial || !pszBaseMaterial[0])
     {
-        const char* pszGloveClass = pKV->GetString("glove_class", nullptr);
-        if (!pszGloveClass || !pszGloveClass[0])
-        {
-            Warning("[SkinDB] Glove skin %d (%s) has no glove_class\n", def.iPaintKit, def.szName);
-            return false;
-        }
-        Q_strncpy(def.szItemClass, pszGloveClass, sizeof(def.szItemClass));
-        
-        def.weaponID = WEAPON_NONE;
-        
-        DevMsg("[SkinDB] Loaded glove skin %d (%s) with class '%s'\n", 
-               def.iPaintKit, def.szName, def.szItemClass);
+        Warning("[SkinDB] Skin %d (%s) has no base material\n", def.iPaintKit, def.szName);
+        return false;
     }
-    else
-    {
-        const char* pszWeapon = pKV->GetString("weapon", nullptr);
-        if (!pszWeapon || !pszWeapon[0])
-        {
-            Warning("[SkinDB] Skin %d (%s) has no weapon\n", def.iPaintKit, def.szName);
-            return false;
-        }
-        def.weaponID = AliasToWeaponID(pszWeapon);
-        if (def.weaponID == WEAPON_NONE)
-        {
-            Warning("[SkinDB] Skin %d (%s) has invalid weapon: %s\n", 
-                    def.iPaintKit, def.szName, pszWeapon);
-            return false;
-        }
-    }
+    Q_strncpy(def.szBaseMaterial, pszBaseMaterial, sizeof(def.szBaseMaterial));
     
+    // Иконка (ОПЦИОНАЛЬНОЕ)
     const char* pszIcon = pKV->GetString("icon", "");
     Q_strncpy(def.szIconPath, pszIcon, sizeof(def.szIconPath));
     
+    // Редкость (ОПЦИОНАЛЬНОЕ)
     def.rarity = (ESkinRarity)pKV->GetInt("rarity", SKIN_RARITY_COMMON);
     if (def.rarity < 0 || def.rarity >= SKIN_RARITY_COUNT)
     {
@@ -247,87 +215,13 @@ bool CCSkinDatabase::ParseSkinDefinition(KeyValues* pKV, SkinDefinition_t& def)
         def.rarity = SKIN_RARITY_COMMON;
     }
     
-    // ========================================
-    // NEWNEW: parce material index from material[index]
-    // ========================================
-    
-    const char* pszBaseMaterial = pKV->GetString("base", nullptr);
-    if (pszBaseMaterial && pszBaseMaterial[0])
-    {
-        //Parce with 0 for "only_first_material" like CS:GO's "only_first_material" param
-        SkinDefinition_t::MaterialData_t matData;
-        matData.iMaterialIndex = 0;
-        Q_strncpy(matData.szBaseMaterial, pszBaseMaterial, sizeof(matData.szBaseMaterial));
-        
-        ParseVMTParams(pKV, matData.vmtParams);
-        
-        def.materials.AddToTail(matData);
-        
-        DevMsg("[SkinDB] Skin %d (%s) loaded with single material (legacy format)\n", 
-               def.iPaintKit, def.szName);
-    }
-    else
-    {
-        //NEWNEW: new index parce logic
-        bool bFoundMaterials = false;
-        
-        for (int i = 0; i < MAX_SKIN_MATERIALS; i++)
-        {
-            char szMaterialKey[32];
-            Q_snprintf(szMaterialKey, sizeof(szMaterialKey), "material%d", i);
-            
-            KeyValues* pMaterialKV = pKV->FindKey(szMaterialKey);
-            if (!pMaterialKV)
-                continue;
-            
-            SkinDefinition_t::MaterialData_t matData;
-            
-            if (ParseMaterialData(pMaterialKV, matData))
-            {
-                // Устанавливаем индекс материала
-                matData.iMaterialIndex = i;
-                def.materials.AddToTail(matData);
-                bFoundMaterials = true;
-                
-                DevMsg("[SkinDB] Skin %d (%s) loaded material%d with base '%s'\n", 
-                       def.iPaintKit, def.szName, i, matData.szBaseMaterial);
-            }
-        }
-        
-        if (!bFoundMaterials)
-        {
-            Warning("[SkinDB] Skin %d (%s) has no materials (neither 'base' nor 'material0', 'material1', etc.)\n", 
-                    def.iPaintKit, def.szName);
-            return false;
-        }
-    }
+    // Парсим override параметры
+    ParseVMTParams(pKV, def.vmtParams);
     
     return true;
 }
 
-// =============================================================================
-// Purpose: ParseMaterialData
-// =============================================================================
-bool CCSkinDatabase::ParseMaterialData(KeyValues* pKV, SkinDefinition_t::MaterialData_t& matData)
-{
-    if (!pKV)
-        return false;
-    
-    const char* pszBase = pKV->GetString("base", nullptr);
-    if (!pszBase || !pszBase[0])
-    {
-        Warning("[SkinDB] Material has no 'base' parameter\n");
-        return false;
-    }
-    
-    Q_strncpy(matData.szBaseMaterial, pszBase, sizeof(matData.szBaseMaterial));
-    
-    ParseVMTParams(pKV, matData.vmtParams);
-    
-    return true;
-}
-
-void CCSkinDatabase::ParseVMTParams(KeyValues* pKV, SkinDefinition_t::MaterialData_t::VMTParams_t& params)
+void CCSkinDatabase::ParseVMTParams(KeyValues* pKV, SkinDefinition_t::VMTParams_t& params)
 {
     // ========================================
     // TEXTURES
@@ -362,27 +256,34 @@ void CCSkinDatabase::ParseVMTParams(KeyValues* pKV, SkinDefinition_t::MaterialDa
     // PHONG
     // ========================================
     if (pKV->FindKey("$phong"))
-        params.bPhong = pKV->GetInt("$phong", 0);
+        params.bPhong = pKV->GetInt("$phong");
     
     if (pKV->FindKey("$phongboost"))
-        params.flPhongBoost = pKV->GetFloat("$phongboost", 1.0f);
+        params.flPhongBoost = pKV->GetFloat("$phongboost");
     
     if (pKV->FindKey("$phongexponent"))
-        params.flPhongExponent = pKV->GetFloat("$phongexponent", 5.0f);
+        params.flPhongExponent = pKV->GetFloat("$phongexponent");
     
     if (pKV->FindKey("$phongalbedotint"))
-        params.flPhongAlbedoTint = pKV->GetFloat("$phongalbedotint", 1.0f);
+        params.flPhongAlbedoTint = pKV->GetFloat("$phongalbedotint");
     
     if (pKV->FindKey("$phongalbedoboost"))
-        params.bPhongAlbedoBoost = pKV->GetInt("$phongalbedoboost", 0);
+        params.bPhongAlbedoBoost = pKV->GetInt("$phongalbedoboost");
     
-    // Phong fresnel ranges
+    // Phong fresnel ranges "[min mid max]"
     if ((pszValue = pKV->GetString("$phongfresnelranges", nullptr)) != nullptr)
     {
-        sscanf(pszValue, "[%f %f %f]", 
-               &params.flPhongFresnelRanges[0],
-               &params.flPhongFresnelRanges[1],
-               &params.flPhongFresnelRanges[2]);
+        if (sscanf(pszValue, "[%f %f %f]", 
+                   &params.flPhongFresnelRanges[0],
+                   &params.flPhongFresnelRanges[1],
+                   &params.flPhongFresnelRanges[2]) != 3)
+        {
+            // Попытка парсинга без скобок
+            sscanf(pszValue, "%f %f %f",
+                   &params.flPhongFresnelRanges[0],
+                   &params.flPhongFresnelRanges[1],
+                   &params.flPhongFresnelRanges[2]);
+        }
     }
     
     // ========================================
@@ -390,95 +291,101 @@ void CCSkinDatabase::ParseVMTParams(KeyValues* pKV, SkinDefinition_t::MaterialDa
     // ========================================
     if ((pszValue = pKV->GetString("$envmaptint", nullptr)) != nullptr)
     {
-        sscanf(pszValue, "[%f %f %f]", 
-               &params.flEnvMapTint[0],
-               &params.flEnvMapTint[1],
-               &params.flEnvMapTint[2]);
+        if (sscanf(pszValue, "[%f %f %f]",
+                   &params.flEnvMapTint[0],
+                   &params.flEnvMapTint[1],
+                   &params.flEnvMapTint[2]) != 3)
+        {
+            sscanf(pszValue, "%f %f %f",
+                   &params.flEnvMapTint[0],
+                   &params.flEnvMapTint[1],
+                   &params.flEnvMapTint[2]);
+        }
     }
     
     if (pKV->FindKey("$envmapsaturation"))
-        params.flEnvMapSaturation = pKV->GetFloat("$envmapsaturation", 1.0f);
+        params.flEnvMapSaturation = pKV->GetFloat("$envmapsaturation");
     
     if (pKV->FindKey("$envmapcontrast"))
-        params.flEnvMapContrast = pKV->GetFloat("$envmapcontrast", 0.0f);
+        params.flEnvMapContrast = pKV->GetFloat("$envmapcontrast");
     
     if (pKV->FindKey("$envmapfresnel"))
-        params.flEnvMapFresnel = pKV->GetFloat("$envmapfresnel", 0.0f);
+        params.flEnvMapFresnel = pKV->GetFloat("$envmapfresnel");
     
     if (pKV->FindKey("$fresnelreflection"))
-        params.flFresnelReflection = pKV->GetFloat("$fresnelreflection", 1.0f);
+        params.flFresnelReflection = pKV->GetFloat("$fresnelreflection");
     
     // ========================================
     // ALPHA & TRANSPARENCY
     // ========================================
     if (pKV->FindKey("$alphatest"))
-        params.bAlphaTest = pKV->GetInt("$alphatest", 0);
+        params.bAlphaTest = pKV->GetInt("$alphatest");
     
     if (pKV->FindKey("$alphatestreference"))
-        params.flAlphaTestReference = pKV->GetFloat("$alphatestreference", 0.5f);
+        params.flAlphaTestReference = pKV->GetFloat("$alphatestreference");
     
     if (pKV->FindKey("$translucent"))
-        params.bTranslucent = pKV->GetInt("$translucent", 0);
+        params.bTranslucent = pKV->GetInt("$translucent");
     
     if (pKV->FindKey("$additive"))
-        params.bAdditive = pKV->GetInt("$additive", 0);
+        params.bAdditive = pKV->GetInt("$additive");
     
     // ========================================
     // TEXTURE MODIFIERS
     // ========================================
     if (pKV->FindKey("$basemapalphaphongmask"))
-        params.bBaseTextureNoEnvMap = pKV->GetInt("$basemapalphaphongmask", 0);
+        params.bBaseTextureNoEnvMap = pKV->GetInt("$basemapalphaphongmask");
     
     if (pKV->FindKey("$normalmapalphaenvmapmask"))
-        params.bNormalMapAlphaPhongMask = pKV->GetInt("$normalmapalphaenvmapmask", 0);
+        params.bNormalMapAlphaPhongMask = pKV->GetInt("$normalmapalphaenvmapmask");
     
     if (pKV->FindKey("$basealphaenvmapmask"))
-        params.bBaseAlphaEnvMapMask = pKV->GetInt("$basealphaenvmapmask", 0);
+        params.bBaseAlphaEnvMapMask = pKV->GetInt("$basealphaenvmapmask");
     
     // ========================================
     // DETAIL TEXTURE
     // ========================================
     if (pKV->FindKey("$detailscale"))
-        params.flDetailScale = pKV->GetFloat("$detailscale", 4.0f);
+        params.flDetailScale = pKV->GetFloat("$detailscale");
     
     if (pKV->FindKey("$detailblendmode"))
-        params.iDetailBlendMode = pKV->GetInt("$detailblendmode", 0);
+        params.iDetailBlendMode = pKV->GetInt("$detailblendmode");
     
     if (pKV->FindKey("$detailblendfactor"))
-        params.flDetailBlendFactor = pKV->GetFloat("$detailblendfactor", 1.0f);
+        params.flDetailBlendFactor = pKV->GetFloat("$detailblendfactor");
     
     // ========================================
     // RIM LIGHTING
     // ========================================
     if (pKV->FindKey("$rimlight"))
-        params.bRimLight = pKV->GetInt("$rimlight", 0);
+        params.bRimLight = pKV->GetInt("$rimlight");
     
     if (pKV->FindKey("$rimlightexponent"))
-        params.flRimLightExponent = pKV->GetFloat("$rimlightexponent", 4.0f);
+        params.flRimLightExponent = pKV->GetFloat("$rimlightexponent");
     
     if (pKV->FindKey("$rimlightboost"))
-        params.flRimLightBoost = pKV->GetFloat("$rimlightboost", 1.0f);
+        params.flRimLightBoost = pKV->GetFloat("$rimlightboost");
     
     // ========================================
     // SELF ILLUMINATION
     // ========================================
     if (pKV->FindKey("$selfillum"))
-        params.bSelfIllum = pKV->GetInt("$selfillum", 0);
+        params.bSelfIllum = pKV->GetInt("$selfillum");
     
     if ((pszValue = pKV->GetString("$selfillumtint", nullptr)) != nullptr)
     {
-        sscanf(pszValue, "[%f %f %f]", 
+        sscanf(pszValue, "[%f %f %f]",
                &params.flSelfIllumTint[0],
                &params.flSelfIllumTint[1],
                &params.flSelfIllumTint[2]);
     }
     
     // ========================================
-    // COLOR MODULATION
+    // COLOR
     // ========================================
     if ((pszValue = pKV->GetString("$color", nullptr)) != nullptr)
     {
-        sscanf(pszValue, "[%f %f %f]", 
+        sscanf(pszValue, "[%f %f %f]",
                &params.flColor[0],
                &params.flColor[1],
                &params.flColor[2]);
@@ -486,117 +393,38 @@ void CCSkinDatabase::ParseVMTParams(KeyValues* pKV, SkinDefinition_t::MaterialDa
     
     if ((pszValue = pKV->GetString("$color2", nullptr)) != nullptr)
     {
-        sscanf(pszValue, "[%f %f %f]", 
+        sscanf(pszValue, "[%f %f %f]",
                &params.flColor2[0],
                &params.flColor2[1],
                &params.flColor2[2]);
     }
     
     // ========================================
-    // MISC RENDERING
+    // MISC
     // ========================================
     if (pKV->FindKey("$nocull"))
-        params.bNoCull = pKV->GetInt("$nocull", 0);
+        params.bNoCull = pKV->GetInt("$nocull");
     
     if (pKV->FindKey("$nodecal"))
-        params.bNoDecal = pKV->GetInt("$nodecal", 0);
+        params.bNoDecal = pKV->GetInt("$nodecal");
     
     if (pKV->FindKey("$halflambert"))
-        params.bHalfLambert = pKV->GetInt("$halflambert", 0);
+        params.bHalfLambert = pKV->GetInt("$halflambert");
     
     // ========================================
-    // CUSTOM CS:GO SKIN PARAMETERS (soon)
+    // CUSTOM CS:GO PARAMETERS
     // ========================================
     if (pKV->FindKey("$wear"))
-        params.flWear = pKV->GetFloat("$wear", 0.0f);
+        params.flWear = pKV->GetFloat("$wear");
     
     if (pKV->FindKey("$seed"))
-        params.iSeed = pKV->GetInt("$seed", 0);
+        params.iSeed = pKV->GetInt("$seed");
     
     if (pKV->FindKey("$patternscale"))
-        params.flPatternScale = pKV->GetFloat("$patternscale", 1.0f);
+        params.flPatternScale = pKV->GetFloat("$patternscale");
     
     if (pKV->FindKey("$patternrotate"))
-        params.flPatternRotate = pKV->GetFloat("$patternrotate", 0.0f);
-}
-
-// =============================================================================
-// Purpose: Parse mayerials with [index]
-// =============================================================================
-
-void CCSkinDatabase::GetAllSkinMaterials(int iPaintKit, CUtlVector<IMaterial*>& materials)
-{
-    materials.RemoveAll();
-    
-    if (!m_bInitialized || iPaintKit <= 0)
-        return;
-    
-    const SkinDefinition_t* pDef = FindSkinByPaintKit(iPaintKit);
-    if (!pDef)
-    {
-        Warning("[SkinDB] Paint kit %d not found\n", iPaintKit);
-        return;
-    }
-    
-    FOR_EACH_VEC(pDef->materials, i)
-    {
-        const SkinDefinition_t::MaterialData_t& matData = pDef->materials[i];
-        IMaterial* pMat = GetSkinMaterial(iPaintKit, matData.iMaterialIndex);
-        
-        if (pMat)
-        {
-            materials.AddToTail(pMat);
-        }
-    }
-    
-    DevMsg("[SkinDB] Loaded %d materials for paint kit %d\n", materials.Count(), iPaintKit);
-}
-
-ITexture* CCSkinDatabase::LoadIcon(const SkinDefinition_t* pDef)
-{
-    if (!pDef || !pDef->szIconPath[0])
-        return nullptr;
-    
-    if (!materials)
-    {
-        Warning("[SkinDB] Materials system is NULL!\n");
-        return nullptr;
-    }
-    
-    ITexture* pIcon = materials->FindTexture(pDef->szIconPath, TEXTURE_GROUP_VGUI, true);
-    
-    if (!pIcon || pIcon->IsError())
-    {
-        DevMsg("[SkinDB] Failed to load icon: %s\n", pDef->szIconPath);
-        return nullptr;
-    }
-    
-    return pIcon;
-}
-
-// =============================================================================
-// Purpose: Clear cache
-// =============================================================================
-
-void CCSkinDatabase::ClearMaterialCache()
-{
-    FOR_EACH_MAP_FAST(m_MaterialCache, i)
-    {
-        IMaterial* pMat = m_MaterialCache[i];
-        if (pMat)
-        {
-            pMat->DecrementReferenceCount();
-        }
-    }
-    
-    m_MaterialCache.RemoveAll();
-    DevMsg("[SkinDB] Material cache cleared\n");
-}
-
-void CCSkinDatabase::ClearIconCache()
-{
-    m_IconCache.RemoveAll();
-    DevMsg("[SkinDB] Icon cache cleared\n");
+        params.flPatternRotate = pKV->GetFloat("$patternrotate");
 }
 
 void CCSkinDatabase::Shutdown()
@@ -606,61 +434,28 @@ void CCSkinDatabase::Shutdown()
     
     DevMsg("[SkinDB] Shutting down...\n");
     
+    // Освобождаем все материалы
     ClearMaterialCache();
+    
+    // Освобождаем все иконки
     ClearIconCache();
     
-    m_SkinDefinitions.RemoveAll();
-    m_WeaponSkins.RemoveAll();
+    // Очищаем weapon skins (память освободится автоматически через деструкторы)
+    m_WeaponSkins.Purge();
+    
+    // Очищаем данные
+    m_SkinDefinitions.Purge();
     
     m_bInitialized = false;
 }
 
-void CCSkinDatabase::ReleaseMaterial(int iPaintKit, int iMaterialIndex)
-{
-    MaterialCacheKey_t key;
-    key.iPaintKit = iPaintKit;
-    key.iMaterialIndex = iMaterialIndex;
-    
-    int idx = m_MaterialCache.Find(key);
-    if (idx != m_MaterialCache.InvalidIndex())
-    {
-        IMaterial* pMat = m_MaterialCache[idx];
-        if (pMat)
-        {
-            pMat->DecrementReferenceCount();
-        }
-        m_MaterialCache.RemoveAt(idx);
-    }
-}
-
-void CCSkinDatabase::ReleaseAllMaterials(int iPaintKit)
-{
-    const SkinDefinition_t* pDef = FindSkinByPaintKit(iPaintKit);
-    if (!pDef)
-        return;
-    
-    FOR_EACH_VEC(pDef->materials, i)
-    {
-        ReleaseMaterial(iPaintKit, pDef->materials[i].iMaterialIndex);
-    }
-}
-
-void CCSkinDatabase::ReleaseIcon(int iPaintKit)
-{
-    int idx = m_IconCache.Find(iPaintKit);
-    if (idx != m_IconCache.InvalidIndex())
-    {
-        m_IconCache.RemoveAt(idx);
-    }
-}
-
 // =============================================================================
-// Purpose: Find Skin (for inventory system, damn...)
+// LOOKUP FUNCTIONS
 // =============================================================================
 
 const SkinDefinition_t* CCSkinDatabase::FindSkinByPaintKit(int iPaintKit) const
 {
-    if (!m_bInitialized || iPaintKit <= 0)
+    if (!m_bInitialized)
         return nullptr;
     
     int idx = m_SkinDefinitions.Find(iPaintKit);
@@ -679,11 +474,13 @@ const SkinDefinition_t* CCSkinDatabase::FindSkinByName(const char* pszName, CSWe
     {
         const SkinDefinition_t& def = m_SkinDefinitions[i];
         
+        if (Q_stricmp(def.szName, pszName) != 0)
+            continue;
+        
         if (weaponID != WEAPON_NONE && def.weaponID != weaponID)
             continue;
         
-        if (Q_stricmp(def.szName, pszName) == 0)
-            return &def;
+        return &def;
     }
     
     return nullptr;
@@ -693,16 +490,22 @@ void CCSkinDatabase::GetSkinsForWeapon(CSWeaponID weaponID, CUtlVector<const Ski
 {
     skins.RemoveAll();
     
-    if (!m_bInitialized || weaponID == WEAPON_NONE)
+    if (!m_bInitialized)
         return;
     
+    // Ищем weapon в списке
     FOR_EACH_VEC(m_WeaponSkins, i)
     {
         if (m_WeaponSkins[i].weaponID == weaponID)
         {
-            for (int j = 0; j < m_WeaponSkins[i].GetCount(); j++)
+            // Получаем все paint kit ID для этого оружия
+            int count = m_WeaponSkins[i].GetCount();
+            
+            for (int j = 0; j < count; j++)
             {
                 int iPaintKit = m_WeaponSkins[i].GetPaintKit(j);
+                
+                // Находим полное определение скина
                 const SkinDefinition_t* pDef = FindSkinByPaintKit(iPaintKit);
                 if (pDef)
                 {
@@ -728,7 +531,7 @@ void CCSkinDatabase::GetAllSkins(CUtlVector<const SkinDefinition_t*>& skins) con
 }
 
 // =============================================================================
-// KeyValues & VMT patch (without changes from original)
+// MATERIAL MANAGEMENT
 // =============================================================================
 
 IMaterial* CCSkinDatabase::GetSkinMaterial(int iPaintKit)
@@ -873,7 +676,7 @@ KeyValues* CCSkinDatabase::CloneBaseMaterialKeyValues(IMaterial* pBaseMat)
     if (!pBaseMat)
         return nullptr;
     
-    // g shader name
+    // Получаем shader name
     const char* pszShaderName = pBaseMat->GetShaderName();
     if (!pszShaderName || !pszShaderName[0])
         pszShaderName = "VertexLitGeneric";
@@ -882,7 +685,7 @@ KeyValues* CCSkinDatabase::CloneBaseMaterialKeyValues(IMaterial* pBaseMat)
     if (!pKV)
         return nullptr;
     
-    // copy material vars
+    // Копируем все material vars
     IMaterialVar** ppParams = pBaseMat->GetShaderParams();
     int numParams = pBaseMat->ShaderParamCount();
     
@@ -955,7 +758,7 @@ KeyValues* CCSkinDatabase::CloneBaseMaterialKeyValues(IMaterial* pBaseMat)
     return pKV;
 }
 
-void CCSkinDatabase::ApplyVMTPatch(KeyValues* pKV, const SkinDefinition_t::MaterialData_t::VMTParams_t& params)
+void CCSkinDatabase::ApplyVMTPatch(KeyValues* pKV, const SkinDefinition_t::VMTParams_t& params)
 {
     if (!pKV)
         return;
@@ -1159,8 +962,80 @@ void CCSkinDatabase::ApplyVMTPatch(KeyValues* pKV, const SkinDefinition_t::Mater
         pKV->SetFloat("$patternrotate", params.flPatternRotate);
 }
 
+ITexture* CCSkinDatabase::LoadIcon(const SkinDefinition_t* pDef)
+{
+    if (!pDef || !pDef->szIconPath[0])
+        return nullptr;
+    
+    if (!materials)
+        return nullptr;
+    
+    // Загружаем текстуру иконки
+    ITexture* pIcon = materials->FindTexture(pDef->szIconPath, TEXTURE_GROUP_VGUI);
+    
+    if (!pIcon || pIcon->IsError())
+    {
+        // Не критично если иконка не загрузилась
+        DevMsg("[SkinDB] Icon not found: %s (paint kit %d)\n", 
+               pDef->szIconPath, pDef->iPaintKit);
+        return nullptr;
+    }
+    
+    DevMsg("[SkinDB] Loaded icon for paint kit %d: %s\n", 
+           pDef->iPaintKit, pDef->szIconPath);
+    
+    return pIcon;
+}
+
+void CCSkinDatabase::ReleaseMaterial(int iPaintKit)
+{
+    int idx = m_MaterialCache.Find(iPaintKit);
+    if (idx == m_MaterialCache.InvalidIndex())
+        return;
+    
+    IMaterial* pMat = m_MaterialCache[idx];
+    if (pMat)
+    {
+        pMat->DecrementReferenceCount();
+    }
+    
+    m_MaterialCache.RemoveAt(idx);
+}
+
+void CCSkinDatabase::ReleaseIcon(int iPaintKit)
+{
+    int idx = m_IconCache.Find(iPaintKit);
+    if (idx == m_IconCache.InvalidIndex())
+        return;
+    
+    // Текстуры не требуют DecrementReferenceCount
+    m_IconCache.RemoveAt(idx);
+}
+
+void CCSkinDatabase::ClearMaterialCache()
+{
+    DevMsg("[SkinDB] Clearing material cache (%d materials)...\n", m_MaterialCache.Count());
+    
+    FOR_EACH_MAP_FAST(m_MaterialCache, i)
+    {
+        IMaterial* pMat = m_MaterialCache[i];
+        if (pMat)
+        {
+            pMat->DecrementReferenceCount();
+        }
+    }
+    
+    m_MaterialCache.Purge();
+}
+
+void CCSkinDatabase::ClearIconCache()
+{
+    DevMsg("[SkinDB] Clearing icon cache (%d icons)...\n", m_IconCache.Count());
+    m_IconCache.Purge();
+}
+
 // =============================================================================
-// Debug / Utility
+// DEBUG FUNCTIONS
 // =============================================================================
 
 void CCSkinDatabase::PrintAllSkins() const
@@ -1171,18 +1046,17 @@ void CCSkinDatabase::PrintAllSkins() const
         return;
     }
     
-    Msg("[SkinDB] === All Skins (%d total) ===\n", m_SkinDefinitions.Count());
-    Msg("%-6s %-30s %-15s %-10s %s\n", "ID", "Name", "Weapon", "Materials", "Rarity");
+    Msg("[SkinDB] Total skins: %d\n", m_SkinDefinitions.Count());
+    Msg("%-6s %-30s %-20s %s\n", "ID", "Name", "Weapon", "Rarity");
     Msg("--------------------------------------------------------------------------------\n");
     
     FOR_EACH_MAP_FAST(m_SkinDefinitions, i)
     {
         const SkinDefinition_t& def = m_SkinDefinitions[i];
-        Msg("%-6d %-30s %-15s %-10d %s\n", 
+        Msg("%-6d %-30s %-20s %s\n", 
             def.iPaintKit, 
-            def.szName,
+            def.szName, 
             WeaponIDToAlias(def.weaponID),
-            def.GetMaterialCount(),
             GetRarityName(def.rarity));
     }
 }
@@ -1199,16 +1073,15 @@ void CCSkinDatabase::PrintSkinsForWeapon(CSWeaponID weaponID) const
     GetSkinsForWeapon(weaponID, skins);
     
     Msg("[SkinDB] Skins for %s: %d\n", WeaponIDToAlias(weaponID), skins.Count());
-    Msg("%-6s %-30s %-10s %s\n", "ID", "Name", "Materials", "Rarity");
+    Msg("%-6s %-30s %s\n", "ID", "Name", "Rarity");
     Msg("--------------------------------------------------------------------------------\n");
     
     FOR_EACH_VEC(skins, i)
     {
         const SkinDefinition_t* pDef = skins[i];
-        Msg("%-6d %-30s %-10d %s\n", 
+        Msg("%-6d %-30s %s\n", 
             pDef->iPaintKit, 
             pDef->szName,
-            pDef->GetMaterialCount(),
             GetRarityName(pDef->rarity));
     }
 }
@@ -1443,63 +1316,4 @@ int CCSkinDatabase::GenerateNewPaintKitID() const
     }
     
     return maxID + 1;
-}
-
-const SkinDefinition_t* CCSkinDatabase::FindGlovesByClass(const char* pszGloveClass) const
-{
-    if (!pszGloveClass || !pszGloveClass[0])
-        return nullptr;
-    
-    FOR_EACH_MAP_FAST(m_SkinDefinitions, i)
-    {
-        const SkinDefinition_t& def = m_SkinDefinitions[i];
-        if (def.itemType == SKIN_ITEM_GLOVES && 
-            Q_stricmp(def.szItemClass, pszGloveClass) == 0)
-        {
-            return &def;
-        }
-    }
-    
-    return nullptr;
-}
-
-void CCSkinDatabase::GetAllGloves(CUtlVector<const SkinDefinition_t*>& gloves) const
-{
-    gloves.RemoveAll();
-    
-    FOR_EACH_MAP_FAST(m_SkinDefinitions, i)
-    {
-        const SkinDefinition_t& def = m_SkinDefinitions[i];
-        if (def.itemType == SKIN_ITEM_GLOVES)
-        {
-            gloves.AddToTail(&def);
-        }
-    }
-}
-
-void CCSkinDatabase::PrintAllGloves() const
-{
-    if (!m_bInitialized)
-    {
-        Msg("[SkinDB] Database not initialized\n");
-        return;
-    }
-    
-    CUtlVector<const SkinDefinition_t*> gloves;
-    GetAllGloves(gloves);
-    
-    Msg("[SkinDB] === All Gloves (%d total) ===\n", gloves.Count());
-    Msg("%-6s %-30s %-20s %-10s %s\n", "ID", "Name", "Class", "Materials", "Rarity");
-    Msg("--------------------------------------------------------------------------------\n");
-    
-    FOR_EACH_VEC(gloves, i)
-    {
-        const SkinDefinition_t* pDef = gloves[i];
-        Msg("%-6d %-30s %-20s %-10d %s\n", 
-            pDef->iPaintKit, 
-            pDef->szName,
-            pDef->szItemClass,
-            pDef->GetMaterialCount(),
-            GetRarityName(pDef->rarity));
-    }
 }
