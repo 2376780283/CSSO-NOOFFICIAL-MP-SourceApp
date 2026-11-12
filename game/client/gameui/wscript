@@ -98,6 +98,7 @@ def build(bld):
 		'ModOptionsSubCrosshair.cpp',
 		'ModOptionsSubLoadout.cpp',
 		'ModOptionsSubInventory.cpp',
+		'vgui_item_context_menu.cpp',
 		'ModOptionsSubGameplay.cpp',
 		'ModOptionsSubKnives.cpp',
 		'ModOptionsSubAgents.cpp',

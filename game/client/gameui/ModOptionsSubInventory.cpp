@@ -14,7 +14,10 @@
 #include <vgui_controls/Label.h>
 #include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/ScrollBar.h>
+#include <vgui/IImage.h>
 #include <vgui/IScheme.h>
+#include <vgui/ISurface.h>
+#include <vgui/IInput.h>
 #include <vgui/IVGui.h>
 
 #include "tier0/dbg.h"
@@ -24,12 +27,90 @@
 #include "tier1/strtools.h"
 #include "cs_skin_database.h"
 #include "cs_weapon_parse.h"
+#include "vgui_item_context_menu.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
 namespace vgui
 {
+
+#define EQUIP_TEAM_NONE  0
+#define EQUIP_TEAM_CT    ( 1 << 0 )
+#define EQUIP_TEAM_T     ( 1 << 1 )
+#define EQUIP_TEAM_BOTH  ( EQUIP_TEAM_CT | EQUIP_TEAM_T )
+
+//-----------------------------------------------------------------------------
+// Purpose: ConVar / slot helpers shared by item indicators and menu commands
+//-----------------------------------------------------------------------------
+static const char *GetWeaponSkinConVarName( CSWeaponID weaponID )
+{
+	switch ( weaponID )
+	{
+		case WEAPON_AK47:       return "loadout_skin_ak47";
+		case WEAPON_M4A4:       return "loadout_skin_m4a4";
+		case WEAPON_M4A1:       return "loadout_skin_m4a1s";
+		case WEAPON_AWP:        return "loadout_skin_awp";
+		case WEAPON_DEAGLE:     return "loadout_skin_deagle";
+		case WEAPON_REVOLVER:   return "loadout_skin_revolver";
+		case WEAPON_GLOCK:      return "loadout_skin_glock";
+		case WEAPON_USP:        return "loadout_skin_usp";
+		case WEAPON_HKP2000:    return "loadout_skin_hkp2000";
+		case WEAPON_P250:       return "loadout_skin_p250";
+		case WEAPON_FIVESEVEN:  return "loadout_skin_fiveseven";
+		case WEAPON_TEC9:       return "loadout_skin_tec9";
+		case WEAPON_CZ75A:      return "loadout_skin_cz75a";
+		case WEAPON_ELITE:      return "loadout_skin_dualberettas";
+		case WEAPON_MAG7:       return "loadout_skin_mag7";
+		case WEAPON_NOVA:       return "loadout_skin_nova";
+		case WEAPON_SAWEDOFF:   return "loadout_skin_sawedoff";
+		case WEAPON_XM1014:     return "loadout_skin_xm1014";
+		case WEAPON_M249:       return "loadout_skin_m249";
+		case WEAPON_NEGEV:      return "loadout_skin_negev";
+		case WEAPON_MAC10:      return "loadout_skin_mac10";
+		case WEAPON_MP9:        return "loadout_skin_mp9";
+		case WEAPON_MP7:        return "loadout_skin_mp7";
+		case WEAPON_MP5SD:      return "loadout_skin_mp5sd";
+		case WEAPON_UMP45:      return "loadout_skin_ump45";
+		case WEAPON_P90:        return "loadout_skin_p90";
+		case WEAPON_BIZON:      return "loadout_skin_bizon";
+		case WEAPON_GALILAR:    return "loadout_skin_galilar";
+		case WEAPON_FAMAS:      return "loadout_skin_famas";
+		case WEAPON_AUG:        return "loadout_skin_aug";
+		case WEAPON_SG556:      return "loadout_skin_sg556";
+		case WEAPON_SSG08:      return "loadout_skin_ssg08";
+		case WEAPON_SCAR20:     return "loadout_skin_scar20";
+		case WEAPON_G3SG1:      return "loadout_skin_g3sg1";
+		default:                return NULL;
+	}
+}
+
+static int GetKnifeSlotIndex( CSWeaponID weaponID )
+{
+	switch ( weaponID )
+	{
+		case WEAPON_KNIFE_CSS:           return 1;
+		case WEAPON_KNIFE_KARAMBIT:      return 2;
+		case WEAPON_KNIFE_FLIP:          return 3;
+		case WEAPON_KNIFE_BAYONET:       return 4;
+		case WEAPON_KNIFE_M9_BAYONET:    return 5;
+		case WEAPON_KNIFE_BUTTERFLY:     return 6;
+		case WEAPON_KNIFE_GUT:           return 7;
+		case WEAPON_KNIFE_TACTICAL:      return 8;
+		case WEAPON_KNIFE_FALCHION:      return 9;
+		case WEAPON_KNIFE_SURVIVAL_BOWIE:return 10;
+		case WEAPON_KNIFE_CANIS:         return 11;
+		case WEAPON_KNIFE_CORD:          return 12;
+		case WEAPON_KNIFE_GYPSY:         return 13;
+		case WEAPON_KNIFE_OUTDOOR:       return 14;
+		case WEAPON_KNIFE_SKELETON:      return 15;
+		case WEAPON_KNIFE_STILETTO:      return 16;
+		case WEAPON_KNIFE_URSUS:         return 17;
+		case WEAPON_KNIFE_WIDOWMAKER:    return 18;
+		case WEAPON_KNIFE_PUSH:          return 19;
+		default:                         return 0;
+	}
+}
 
 //-----------------------------------------------------------------------------
 // CInventoryItemPanel - panel for a single skin
@@ -39,41 +120,55 @@ class CInventoryItemPanel : public vgui::EditablePanel
 	DECLARE_CLASS_SIMPLE( CInventoryItemPanel, vgui::EditablePanel );
 
 public:
-	CInventoryItemPanel( Panel *parent, const char *panelName, const SkinDefinition_t *pSkinDef );
+	CInventoryItemPanel( Panel *parent, const char *panelName, const SkinDefinition_t *pSkinDef,
+		InventoryItemType_t itemType = INVENTORY_ITEM_WEAPON_SKIN );
 
 	virtual void ApplySchemeSettings( vgui::IScheme *pScheme );
 	virtual void PerformLayout();
+	virtual void Paint();
 	virtual void OnMousePressed( vgui::MouseCode code );
 	virtual void OnCursorEntered();
 	virtual void OnCursorExited();
 
 	const SkinDefinition_t *GetSkinDefinition() const { return m_pSkinDef; }
 	int GetPaintKit() const { return m_pSkinDef ? m_pSkinDef->iPaintKit : 0; }
+	InventoryItemType_t GetItemType() const { return m_ItemType; }
+	void UpdateEquipIndicators();
 
 private:
 	void UpdateDisplay();
+	void SetIconImage( const char *pszIconPath );
 	Color GetRarityColor() const;
+	int GetEquipFlags() const;
 
 	const SkinDefinition_t	*m_pSkinDef;
+	InventoryItemType_t		m_ItemType;
 	vgui::Label				*m_pNameLabel;
 	vgui::Label				*m_pWeaponLabel;
 	vgui::ImagePanel		*m_pIconImage;
 
 	bool					m_bMouseOver;
+	int						m_iEquipFlags;
 };
 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-CInventoryItemPanel::CInventoryItemPanel( Panel *parent, const char *panelName, const SkinDefinition_t *pSkinDef )
+CInventoryItemPanel::CInventoryItemPanel( Panel *parent, const char *panelName, const SkinDefinition_t *pSkinDef,
+	InventoryItemType_t itemType )
 	: BaseClass( parent, panelName )
 {
 	m_pSkinDef = pSkinDef;
+	m_ItemType = itemType;
 	m_bMouseOver = false;
+	m_iEquipFlags = EQUIP_TEAM_NONE;
 
 	m_pNameLabel = new vgui::Label( this, "NameLabel", "" );
+	m_pNameLabel->SetMouseInputEnabled( false );
 	m_pWeaponLabel = new vgui::Label( this, "WeaponLabel", "" );
+	m_pWeaponLabel->SetMouseInputEnabled( false );
 	m_pIconImage = new vgui::ImagePanel( this, "IconImage" );
+	m_pIconImage->SetMouseInputEnabled( false );
 
 	SetMouseInputEnabled( true );
 
@@ -109,15 +204,40 @@ void CInventoryItemPanel::PerformLayout()
 	const int labelSpacing = 3;
 
 	int textBlock = weaponLabelHeight + nameLabelHeight + labelSpacing;
-	int iconSize = MIN( wide - margin * 2, tall - margin * 2 - textBlock );
-	if ( iconSize < 0 )
-		iconSize = 0;
+	int iconAreaWidth = wide - margin * 2;
+	int iconAreaHeight = tall - margin * 2 - textBlock;
+	if ( iconAreaWidth < 0 )
+		iconAreaWidth = 0;
+	if ( iconAreaHeight < 0 )
+		iconAreaHeight = 0;
 
-	int iconX = ( wide - iconSize ) / 2;
-	int iconY = margin;
-	m_pIconImage->SetBounds( iconX, iconY, iconSize, iconSize );
+	int drawWide = iconAreaWidth;
+	int drawTall = iconAreaHeight;
 
-	int labelTop = iconY + iconSize + labelSpacing;
+	IImage *pImage = m_pIconImage->GetImage();
+	if ( pImage )
+	{
+		int textureWide = 0, textureTall = 0;
+		pImage->GetSize( textureWide, textureTall );
+
+		if ( textureWide > 0 && textureTall > 0 )
+		{
+			float scaleX = (float)iconAreaWidth / textureWide;
+			float scaleY = (float)iconAreaHeight / textureTall;
+			float scale = MIN( scaleX, scaleY );
+			if ( scale > 1.0f )
+				scale = 1.0f;
+
+			drawWide = (int)( textureWide * scale + 0.5f );
+			drawTall = (int)( textureTall * scale + 0.5f );
+		}
+	}
+
+	int iconX = ( wide - drawWide ) / 2;
+	int iconY = margin + ( iconAreaHeight - drawTall ) / 2;
+	m_pIconImage->SetBounds( iconX, iconY, drawWide, drawTall );
+
+	int labelTop = margin + iconAreaHeight + labelSpacing;
 	m_pWeaponLabel->SetBounds( margin, labelTop, wide - margin * 2, weaponLabelHeight );
 	m_pWeaponLabel->SetContentAlignment( vgui::Label::a_center );
 
@@ -126,13 +246,104 @@ void CInventoryItemPanel::PerformLayout()
 	m_pNameLabel->SetContentAlignment( vgui::Label::a_center );
 }
 
+void CInventoryItemPanel::Paint()
+{
+	BaseClass::Paint();
+
+	if ( m_iEquipFlags == EQUIP_TEAM_NONE )
+		return;
+
+	int wide, tall;
+	GetSize( wide, tall );
+
+	const int indicatorSize = 10;
+	const int indicatorSpacing = 4;
+	int indicatorY = 7;
+	int indicatorX = wide - indicatorSize - 7;
+
+	if ( m_iEquipFlags & EQUIP_TEAM_CT )
+	{
+		vgui::surface()->DrawSetColor( Color( 90, 140, 200, 255 ) );
+		vgui::surface()->DrawFilledRect( indicatorX, indicatorY, indicatorX + indicatorSize, indicatorY + indicatorSize );
+		vgui::surface()->DrawSetColor( Color( 255, 255, 255, 200 ) );
+		vgui::surface()->DrawOutlinedRect( indicatorX, indicatorY, indicatorX + indicatorSize, indicatorY + indicatorSize );
+		indicatorX -= ( indicatorSize + indicatorSpacing );
+	}
+
+	if ( m_iEquipFlags & EQUIP_TEAM_T )
+	{
+		vgui::surface()->DrawSetColor( Color( 200, 150, 100, 255 ) );
+		vgui::surface()->DrawFilledRect( indicatorX, indicatorY, indicatorX + indicatorSize, indicatorY + indicatorSize );
+		vgui::surface()->DrawSetColor( Color( 255, 255, 255, 200 ) );
+		vgui::surface()->DrawOutlinedRect( indicatorX, indicatorY, indicatorX + indicatorSize, indicatorY + indicatorSize );
+	}
+}
+
+int CInventoryItemPanel::GetEquipFlags() const
+{
+	if ( !m_pSkinDef )
+		return EQUIP_TEAM_NONE;
+
+	if ( m_ItemType == INVENTORY_ITEM_KNIFE )
+	{
+		int knifeIndex = GetKnifeSlotIndex( m_pSkinDef->weaponID );
+		if ( knifeIndex <= 0 )
+			return EQUIP_TEAM_NONE;
+
+		int flags = EQUIP_TEAM_NONE;
+
+		ConVar *pKnifeSkinCT = cvar->FindVar( "loadout_slot_knife_weapon_skin_ct" );
+		ConVar *pKnifeSlotCT = cvar->FindVar( "loadout_slot_knife_weapon_ct" );
+		if ( pKnifeSkinCT && pKnifeSlotCT &&
+			pKnifeSkinCT->GetInt() == m_pSkinDef->iPaintKit &&
+			pKnifeSlotCT->GetInt() == knifeIndex )
+		{
+			flags |= EQUIP_TEAM_CT;
+		}
+
+		ConVar *pKnifeSkinT = cvar->FindVar( "loadout_slot_knife_weapon_skin_t" );
+		ConVar *pKnifeSlotT = cvar->FindVar( "loadout_slot_knife_weapon_t" );
+		if ( pKnifeSkinT && pKnifeSlotT &&
+			pKnifeSkinT->GetInt() == m_pSkinDef->iPaintKit &&
+			pKnifeSlotT->GetInt() == knifeIndex )
+		{
+			flags |= EQUIP_TEAM_T;
+		}
+
+		return flags;
+	}
+
+	const char *pszConVarName = GetWeaponSkinConVarName( m_pSkinDef->weaponID );
+	if ( !pszConVarName )
+		return EQUIP_TEAM_NONE;
+
+	ConVar *pConVar = cvar->FindVar( pszConVarName );
+	if ( pConVar && pConVar->GetInt() == m_pSkinDef->iPaintKit )
+		return EQUIP_TEAM_BOTH;
+
+	return EQUIP_TEAM_NONE;
+}
+
+void CInventoryItemPanel::UpdateEquipIndicators()
+{
+	m_iEquipFlags = GetEquipFlags();
+	Repaint();
+}
+
 void CInventoryItemPanel::OnMousePressed( vgui::MouseCode code )
 {
-	if ( code == MOUSE_LEFT && m_pSkinDef )
+	if ( ( code == MOUSE_LEFT || code == MOUSE_RIGHT ) && m_pSkinDef )
 	{
+		int cursorX = 0, cursorY = 0;
+		vgui::input()->GetCursorPos( cursorX, cursorY );
+
 		KeyValues *pKV = new KeyValues( "ItemSelected" );
 		pKV->SetInt( "paintkit", m_pSkinDef->iPaintKit );
 		pKV->SetInt( "weaponid", m_pSkinDef->weaponID );
+		pKV->SetInt( "itemtype", m_ItemType );
+		pKV->SetInt( "specialindex", 0 );
+		pKV->SetInt( "cursorx", cursorX );
+		pKV->SetInt( "cursory", cursorY );
 		PostActionSignal( pKV );
 	}
 
@@ -182,14 +393,73 @@ void CInventoryItemPanel::UpdateDisplay()
 
 	if ( m_pSkinDef->szIconPath[0] )
 	{
-		m_pIconImage->SetImage( m_pSkinDef->szIconPath );
 		m_pIconImage->SetShouldScaleImage( true );
 		m_pIconImage->SetVisible( true );
+		SetIconImage( m_pSkinDef->szIconPath );
 	}
 	else
 	{
 		m_pIconImage->SetVisible( false );
 	}
+}
+
+void CInventoryItemPanel::SetIconImage( const char *pszIconPath )
+{
+	if ( !pszIconPath || !pszIconPath[0] )
+		return;
+
+	// ImagePanel / scheme image names are relative to materials/vgui and the
+	// scheme manager already prepends "vgui/". Skin packs commonly store
+	// either "materials/vgui/...", "vgui/..." or a plain relative path, so
+	// try all common forms instead of silently ending up with a blank panel.
+	char szNormalized[MAX_PATH];
+	Q_strncpy( szNormalized, pszIconPath, sizeof( szNormalized ) );
+
+	for ( char *p = szNormalized; *p; ++p )
+	{
+		if ( *p == '\\' )
+			*p = '/';
+	}
+
+	char *pszRaw = szNormalized;
+	while ( *pszRaw == '/' )
+		++pszRaw;
+
+	const char *pszNoMaterials = pszRaw;
+	if ( Q_strnicmp( pszNoMaterials, "materials/", 10 ) == 0 )
+		pszNoMaterials += 10;
+
+	const char *pszNoVgui = pszRaw;
+	if ( Q_strnicmp( pszNoVgui, "vgui/", 5 ) == 0 )
+		pszNoVgui += 5;
+
+	const char *pszRelative = pszNoMaterials;
+	if ( Q_strnicmp( pszRelative, "vgui/", 5 ) == 0 )
+		pszRelative += 5;
+
+	char szEscaped[MAX_PATH];
+	Q_snprintf( szEscaped, sizeof( szEscaped ), "../%s", pszNoMaterials );
+
+	const char *pCandidates[] = { pszRaw, pszNoMaterials, pszNoVgui, pszRelative, szEscaped };
+	for ( int i = 0; i < ARRAYSIZE( pCandidates ); ++i )
+	{
+		if ( !pCandidates[i] || !pCandidates[i][0] )
+			continue;
+
+		m_pIconImage->SetImage( pCandidates[i] );
+
+		IImage *pImage = m_pIconImage->GetImage();
+		if ( pImage )
+		{
+			int wide = 0, tall = 0;
+			pImage->GetSize( wide, tall );
+			if ( wide > 0 && tall > 0 )
+				return;
+		}
+	}
+
+	DevMsg( "[Inventory] Could not load icon '%s' for skin '%s'\n",
+		pszIconPath, m_pSkinDef ? m_pSkinDef->szName : "" );
 }
 
 Color CInventoryItemPanel::GetRarityColor() const
@@ -241,6 +511,30 @@ static int __cdecl CompareInventorySkins( const SkinDefinition_t * const *ppLeft
 }
 
 //-----------------------------------------------------------------------------
+// CInventoryItemContainer
+//-----------------------------------------------------------------------------
+class CInventoryItemContainer : public vgui::EditablePanel
+{
+	DECLARE_CLASS_SIMPLE( CInventoryItemContainer, vgui::EditablePanel );
+
+public:
+	CInventoryItemContainer( Panel *parent, const char *panelName )
+		: BaseClass( parent, panelName )
+	{
+	}
+
+	virtual void PerformLayout() {}
+
+	// EditablePanel::OnSizeChanged() repositions every child to its pin offset.
+	// That destroys the manually computed item grid whenever the scrollable
+	// container is resized, so deliberately skip the auto-layout here.
+	virtual void OnSizeChanged( int wide, int tall )
+	{
+		InvalidateLayout();
+	}
+};
+
+//-----------------------------------------------------------------------------
 // CInventoryPanel
 //-----------------------------------------------------------------------------
 class CInventoryPanel : public vgui::EditablePanel
@@ -265,17 +559,19 @@ public:
 	void ClearFilters();
 
 	MESSAGE_FUNC_PARAMS( OnItemSelected, "ItemSelected", data );
+	MESSAGE_FUNC_PARAMS( OnMenuCommand, "MenuCommand", data );
 
 private:
 	void RebuildInventory();
 	void LayoutItems();
 	void AddSkinToInventory( const SkinDefinition_t *pSkinDef );
-	void SaveSkinToLoadout( int iPaintKit, CSWeaponID weaponID );
-	const char *GetConVarNameForWeapon( CSWeaponID weaponID );
+	void SaveItemToLoadout( int iPaintKit, CSWeaponID weaponID, InventoryItemType_t itemType, int teamFlags );
+	void UnequipItem( CSWeaponID weaponID, InventoryItemType_t itemType );
 
 	vgui::ScrollableEditablePanel	*m_pScrollablePanel;
 	vgui::EditablePanel				*m_pItemContainer;
 	CUtlVector<CInventoryItemPanel *> m_Items;
+	CItemContextMenu				*m_pContextMenu;
 
 	int m_iItemWidth;
 	int m_iItemHeight;
@@ -307,9 +603,12 @@ CInventoryPanel::CInventoryPanel( Panel *parent, const char *panelName )
 	m_bUseRarityFilter = false;
 	m_bFirstLayout = true;
 
-	m_pItemContainer = new vgui::EditablePanel( NULL, "ItemContainer" );
+	m_pItemContainer = new CInventoryItemContainer( NULL, "ItemContainer" );
 
 	m_pScrollablePanel = new vgui::ScrollableEditablePanel( this, m_pItemContainer, "InventoryScroll" );
+
+	m_pContextMenu = new CItemContextMenu( this, "ItemContextMenu" );
+	m_pContextMenu->SetVisible( false );
 
 	vgui::ivgui()->AddTickSignal( GetVPanel(), 100 );
 }
@@ -317,6 +616,12 @@ CInventoryPanel::CInventoryPanel( Panel *parent, const char *panelName )
 CInventoryPanel::~CInventoryPanel()
 {
 	ClearInventory();
+
+	if ( m_pContextMenu )
+	{
+		m_pContextMenu->MarkForDeletion();
+		m_pContextMenu = NULL;
+	}
 }
 
 void CInventoryPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
@@ -379,6 +684,14 @@ void CInventoryPanel::LayoutItems()
 	int numItems = m_Items.Count();
 	int numRows = ( numItems + m_iItemsPerRow - 1 ) / m_iItemsPerRow;
 
+	int contentHeight = spacing + numRows * ( m_iItemHeight + spacing );
+	int containerHeight = max( tall, contentHeight );
+
+	// Resize the container before positioning children. EditablePanel-derived
+	// containers may reposition their children from OnSizeChanged(), which
+	// would otherwise reset the whole grid to (0,0).
+	m_pItemContainer->SetSize( usableWidth, containerHeight );
+
 	for ( int i = 0; i < numItems; i++ )
 	{
 		int row = i / m_iItemsPerRow;
@@ -393,10 +706,6 @@ void CInventoryPanel::LayoutItems()
 		// its icon and labels get positioned using the new item size.
 		m_Items[i]->InvalidateLayout( true );
 	}
-
-	int contentHeight = spacing + numRows * ( m_iItemHeight + spacing );
-	int containerHeight = max( tall, contentHeight );
-	m_pItemContainer->SetSize( usableWidth, containerHeight );
 
 	// ScrollableEditablePanel only recalculates its scrollbar when it is laid out.
 	// The item container changes size after loading/filtering, so keep the bar in sync here.
@@ -501,8 +810,13 @@ void CInventoryPanel::AddSkinToInventory( const SkinDefinition_t *pSkinDef )
 	char panelName[64];
 	Q_snprintf( panelName, sizeof( panelName ), "Item_%d", m_Items.Count() );
 
-	CInventoryItemPanel *pItem = new CInventoryItemPanel( m_pItemContainer, panelName, pSkinDef );
+	InventoryItemType_t itemType = INVENTORY_ITEM_WEAPON_SKIN;
+	if ( pSkinDef->weaponID >= WEAPON_KNIFE && pSkinDef->weaponID <= WEAPON_KNIFE_LAST )
+		itemType = INVENTORY_ITEM_KNIFE;
+
+	CInventoryItemPanel *pItem = new CInventoryItemPanel( m_pItemContainer, panelName, pSkinDef, itemType );
 	pItem->AddActionSignalTarget( this );
+	pItem->UpdateEquipIndicators();
 	m_Items.AddToTail( pItem );
 }
 
@@ -545,29 +859,90 @@ void CInventoryPanel::OnItemSelected( KeyValues *data )
 {
 	int iPaintKit = data->GetInt( "paintkit", 0 );
 	int iWeaponID = data->GetInt( "weaponid", WEAPON_NONE );
+	int iItemType = data->GetInt( "itemtype", INVENTORY_ITEM_WEAPON_SKIN );
+	int iSpecialIndex = data->GetInt( "specialindex", 0 );
+	int cursorX = data->GetInt( "cursorx", 0 );
+	int cursorY = data->GetInt( "cursory", 0 );
 
-	if ( iPaintKit > 0 && iWeaponID != WEAPON_NONE )
+	if ( !m_pContextMenu || iPaintKit <= 0 || iWeaponID == WEAPON_NONE )
+		return;
+
+	const SkinDefinition_t *pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+	if ( !pSkinDef )
+		return;
+
+	const char *pszWeaponName = WeaponIDToAlias( pSkinDef->weaponID );
+	m_pContextMenu->ShowForItem( iPaintKit, (CSWeaponID)iWeaponID, (InventoryItemType_t)iItemType,
+		iSpecialIndex, pszWeaponName ? pszWeaponName : "Item", pSkinDef->szName, cursorX, cursorY );
+}
+
+void CInventoryPanel::OnMenuCommand( KeyValues *data )
+{
+	if ( !m_pContextMenu )
+		return;
+
+	const char *pszCommand = data->GetString( "command", "" );
+	int iPaintKit = m_pContextMenu->GetCurrentPaintKit();
+	CSWeaponID weaponID = m_pContextMenu->GetCurrentWeaponID();
+	InventoryItemType_t itemType = m_pContextMenu->GetItemType();
+
+	if ( Q_stricmp( pszCommand, "unequip" ) == 0 )
 	{
-		const SkinDefinition_t *pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+		UnequipItem( weaponID, itemType );
+	}
+	else
+	{
+		int teamFlags = EQUIP_TEAM_BOTH;
+		if ( Q_stricmp( pszCommand, "equip_ct" ) == 0 )
+			teamFlags = EQUIP_TEAM_CT;
+		else if ( Q_stricmp( pszCommand, "equip_t" ) == 0 )
+			teamFlags = EQUIP_TEAM_T;
 
-		if ( pSkinDef )
-		{
-			Msg( "[Inventory] Selected skin: %s (PaintKit: %d, Weapon: %s)\n",
-				pSkinDef->szName,
-				iPaintKit,
-				WeaponIDToAlias( pSkinDef->weaponID ) );
+		SaveItemToLoadout( iPaintKit, weaponID, itemType, teamFlags );
+	}
 
-			SaveSkinToLoadout( iPaintKit, (CSWeaponID)iWeaponID );
+	m_pContextMenu->SetVisible( false );
 
-			PostActionSignal( new KeyValues( "SkinSelected", "paintkit", iPaintKit ) );
-		}
+	FOR_EACH_VEC( m_Items, i )
+	{
+		m_Items[i]->UpdateEquipIndicators();
 	}
 }
 
-void CInventoryPanel::SaveSkinToLoadout( int iPaintKit, CSWeaponID weaponID )
+void CInventoryPanel::SaveItemToLoadout( int iPaintKit, CSWeaponID weaponID, InventoryItemType_t itemType, int teamFlags )
 {
-	const char *pszConVarName = GetConVarNameForWeapon( weaponID );
+	if ( itemType == INVENTORY_ITEM_KNIFE )
+	{
+		int knifeIndex = GetKnifeSlotIndex( weaponID );
+		if ( knifeIndex <= 0 )
+			return;
 
+		if ( teamFlags & EQUIP_TEAM_CT )
+		{
+			ConVar *pKnifeSkinCT = cvar->FindVar( "loadout_slot_knife_weapon_skin_ct" );
+			if ( pKnifeSkinCT )
+				pKnifeSkinCT->SetValue( iPaintKit );
+
+			ConVar *pKnifeSlotCT = cvar->FindVar( "loadout_slot_knife_weapon_ct" );
+			if ( pKnifeSlotCT )
+				pKnifeSlotCT->SetValue( knifeIndex );
+		}
+
+		if ( teamFlags & EQUIP_TEAM_T )
+		{
+			ConVar *pKnifeSkinT = cvar->FindVar( "loadout_slot_knife_weapon_skin_t" );
+			if ( pKnifeSkinT )
+				pKnifeSkinT->SetValue( iPaintKit );
+
+			ConVar *pKnifeSlotT = cvar->FindVar( "loadout_slot_knife_weapon_t" );
+			if ( pKnifeSlotT )
+				pKnifeSlotT->SetValue( knifeIndex );
+		}
+
+		return;
+	}
+
+	const char *pszConVarName = GetWeaponSkinConVarName( weaponID );
 	if ( !pszConVarName )
 	{
 		Warning( "[Inventory] No ConVar found for weapon ID: %d\n", weaponID );
@@ -575,57 +950,42 @@ void CInventoryPanel::SaveSkinToLoadout( int iPaintKit, CSWeaponID weaponID )
 	}
 
 	ConVar *pConVar = cvar->FindVar( pszConVarName );
-
 	if ( pConVar )
 	{
 		pConVar->SetValue( iPaintKit );
-		Msg( "[Inventory] Saved skin %d to %s\n", iPaintKit, pszConVarName );
-	}
-	else
-	{
-		Warning( "[Inventory] ConVar not found: %s\n", pszConVarName );
+		Msg( "[Inventory] Equipped skin %d to %s\n", iPaintKit, pszConVarName );
 	}
 }
 
-const char *CInventoryPanel::GetConVarNameForWeapon( CSWeaponID weaponID )
+void CInventoryPanel::UnequipItem( CSWeaponID weaponID, InventoryItemType_t itemType )
 {
-	switch ( weaponID )
+	if ( itemType == INVENTORY_ITEM_KNIFE )
 	{
-		case WEAPON_AK47:       return "loadout_skin_ak47";
-		case WEAPON_M4A4:       return "loadout_skin_m4a4";
-		case WEAPON_M4A1:       return "loadout_skin_m4a1s";
-		case WEAPON_AWP:        return "loadout_skin_awp";
-		case WEAPON_DEAGLE:     return "loadout_skin_deagle";
-		case WEAPON_REVOLVER:   return "loadout_skin_revolver";
-		case WEAPON_GLOCK:      return "loadout_skin_glock";
-		case WEAPON_USP:        return "loadout_skin_usp";
-		case WEAPON_HKP2000:    return "loadout_skin_hkp2000";
-		case WEAPON_P250:       return "loadout_skin_p250";
-		case WEAPON_FIVESEVEN:  return "loadout_skin_fiveseven";
-		case WEAPON_TEC9:       return "loadout_skin_tec9";
-		case WEAPON_CZ75A:      return "loadout_skin_cz75a";
-		case WEAPON_ELITE:      return "loadout_skin_dualberettas";
-		case WEAPON_MAG7:       return "loadout_skin_mag7";
-		case WEAPON_NOVA:       return "loadout_skin_nova";
-		case WEAPON_SAWEDOFF:   return "loadout_skin_sawedoff";
-		case WEAPON_XM1014:     return "loadout_skin_xm1014";
-		case WEAPON_M249:       return "loadout_skin_m249";
-		case WEAPON_NEGEV:      return "loadout_skin_negev";
-		case WEAPON_MAC10:      return "loadout_skin_mac10";
-		case WEAPON_MP9:        return "loadout_skin_mp9";
-		case WEAPON_MP7:        return "loadout_skin_mp7";
-		case WEAPON_MP5SD:      return "loadout_skin_mp5sd";
-		case WEAPON_UMP45:      return "loadout_skin_ump45";
-		case WEAPON_P90:        return "loadout_skin_p90";
-		case WEAPON_BIZON:      return "loadout_skin_bizon";
-		case WEAPON_GALILAR:    return "loadout_skin_galilar";
-		case WEAPON_FAMAS:      return "loadout_skin_famas";
-		case WEAPON_AUG:        return "loadout_skin_aug";
-		case WEAPON_SG556:      return "loadout_skin_sg556";
-		case WEAPON_SSG08:      return "loadout_skin_ssg08";
-		case WEAPON_SCAR20:     return "loadout_skin_scar20";
-		case WEAPON_G3SG1:      return "loadout_skin_g3sg1";
-		default:                return NULL;
+		ConVar *pKnifeSkinCT = cvar->FindVar( "loadout_slot_knife_weapon_skin_ct" );
+		if ( pKnifeSkinCT )
+			pKnifeSkinCT->SetValue( 0 );
+
+		ConVar *pKnifeSkinT = cvar->FindVar( "loadout_slot_knife_weapon_skin_t" );
+		if ( pKnifeSkinT )
+			pKnifeSkinT->SetValue( 0 );
+
+		ConVar *pKnifeSlotCT = cvar->FindVar( "loadout_slot_knife_weapon_ct" );
+		if ( pKnifeSlotCT )
+			pKnifeSlotCT->SetValue( 0 );
+
+		ConVar *pKnifeSlotT = cvar->FindVar( "loadout_slot_knife_weapon_t" );
+		if ( pKnifeSlotT )
+			pKnifeSlotT->SetValue( 0 );
+
+		return;
+	}
+
+	const char *pszConVarName = GetWeaponSkinConVarName( weaponID );
+	if ( pszConVarName )
+	{
+		ConVar *pConVar = cvar->FindVar( pszConVarName );
+		if ( pConVar )
+			pConVar->SetValue( 0 );
 	}
 }
 
