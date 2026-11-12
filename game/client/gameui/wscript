@@ -97,6 +97,7 @@ def build(bld):
 		'ModOptionsDialog.cpp',
 		'ModOptionsSubCrosshair.cpp',
 		'ModOptionsSubLoadout.cpp',
+		'ModOptionsSubInventory.cpp',
 		'ModOptionsSubGameplay.cpp',
 		'ModOptionsSubKnives.cpp',
 		'ModOptionsSubAgents.cpp',
@@ -121,6 +122,14 @@ def build(bld):
 		'../game/client',
 		'../game/shared',
 		'../game/shared/cstrike',
+		'../cstrike',
+		'../../public',
+		'../../public/tier0',
+		'../../public/tier1',
+		'../../common',
+		'../../common/GameUI',
+		'../../shared',
+		'../../shared/cstrike',
 		'../thirdparty'
 	]
 

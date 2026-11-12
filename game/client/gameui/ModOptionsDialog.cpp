@@ -23,6 +23,7 @@
 #include "ModOptionsSubGameplay.h"
 #include "ModOptionsSubCrosshair.h"
 #include "ModOptionsSubLoadout.h"
+#include "ModOptionsSubInventory.h"
 #include "ModOptionsSubKnives.h"
 #include "ModOptionsSubAgents.h"
 #include "ModOptionsSubGloves.h"
@@ -58,6 +59,7 @@ CModOptionsDialog::CModOptionsDialog(vgui::Panel *parent) : PropertyDialog(paren
 	AddPage(new CModOptionsSubGameplay(this), "#GameUI_Gameplay");
 	AddPage(new CModOptionsSubCrosshair(this), "#GameUI_Crosshair");
 	AddPage(new CModOptionsSubLoadout(this), "#GameUI_Loadout");
+	AddPage(new CModOptionsSubInventory(this), "#GameUI_Inventory");
 	AddPage(new CModOptionsSubKnives(this), "#GameUI_Knives");
 	AddPage(new CModOptionsSubAgents(this), "#GameUI_Agents");
 	AddPage(new CModOptionsSubGloves(this), "#GameUI_Gloves");

@@ -15,7 +15,7 @@ $Configuration
 {
 	$Compiler
 	{
-		$AdditionalIncludeDirectories	"$BASE;.\;$SRCDIR\vgui2\include;$SRCDIR\vgui2\controls;$SRCDIR\common\GameUI"
+		$AdditionalIncludeDirectories	"$BASE;.\;$SRCDIR\vgui2\include;$SRCDIR\vgui2\controls;$SRCDIR\common\GameUI;$SRCDIR\cstrike;$SRCDIR\..\shared\cstrike"
 		$PreprocessorDefinitions		"$BASE;GAMEUI_EXPORTS;VERSION_SAFE_STEAM_API_INTERFACES"
 	}
 
@@ -249,6 +249,8 @@ $Project "GameUI"
 		$File	"ModOptionsSubKnives.h"
 		$File	"ModOptionsSubLoadout.cpp"
 		$File	"ModOptionsSubLoadout.h"
+		$File	"ModOptionsSubInventory.cpp"
+		$File	"ModOptionsSubInventory.h"
 	}
 	
 	$Folder	"Link Libraries"
