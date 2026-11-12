@@ -99,6 +99,7 @@ def build(bld):
 		'ModOptionsSubLoadout.cpp',
 		'ModOptionsSubInventory.cpp',
 		'vgui_item_context_menu.cpp',
+		'vgui_inventory_preview.cpp',
 		'ModOptionsSubGameplay.cpp',
 		'ModOptionsSubKnives.cpp',
 		'ModOptionsSubAgents.cpp',
@@ -131,6 +132,8 @@ def build(bld):
 		'../../common/GameUI',
 		'../../shared',
 		'../../shared/cstrike',
+		'../../vgui2',
+		'../../vgui2/include',
 		'../thirdparty'
 	]
 

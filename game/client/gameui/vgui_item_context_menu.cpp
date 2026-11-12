@@ -48,6 +48,9 @@ void CItemContextMenu::BuildMenuForItem()
 {
 	DeleteAllItems();
 
+	AddMenuItem( "Preview", new KeyValues( "MenuCommand", "command", "preview" ), GetParent() );
+	AddSeparator();
+
 	if ( m_ItemType == INVENTORY_ITEM_KNIFE || m_ItemType == INVENTORY_ITEM_GLOVES )
 	{
 		AddMenuItem( "Equip for all", new KeyValues( "MenuCommand", "command", "equip_all" ), GetParent() );

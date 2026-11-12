@@ -20,6 +20,8 @@ namespace vgui
 	class CInventoryPanel;
 }
 
+class CInventoryPreviewDialog;
+
 //-----------------------------------------------------------------------------
 // Purpose: skin inventory options property page
 //-----------------------------------------------------------------------------
@@ -32,6 +34,7 @@ public:
 	~CModOptionsSubInventory();
 
 	MESSAGE_FUNC_PTR( OnTextChanged, "TextChanged", panel );
+	MESSAGE_FUNC_PARAMS( OnPreviewItem, "PreviewItem", data );
 
 protected:
 	// Called when page is loaded.  Data should be reloaded from document into controls.
@@ -45,8 +48,9 @@ protected:
 private:
 	void CreateControls();
 
-	vgui::CInventoryPanel	*m_pInventoryPanel;
-	vgui::Button			*m_pShowAllButton;
+	vgui::CInventoryPanel		*m_pInventoryPanel;
+	CInventoryPreviewDialog		*m_pPreviewDialog;
+	vgui::Button				*m_pShowAllButton;
 	vgui::ComboBox			*m_pWeaponFilter;
 	vgui::ComboBox			*m_pRarityFilter;
 };

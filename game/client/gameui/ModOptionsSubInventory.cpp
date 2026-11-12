@@ -28,6 +28,7 @@
 #include "cs_skin_database.h"
 #include "cs_weapon_parse.h"
 #include "vgui_item_context_menu.h"
+#include "vgui_inventory_preview.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
@@ -353,6 +354,7 @@ void CInventoryItemPanel::OnMousePressed( vgui::MouseCode code )
 void CInventoryItemPanel::OnCursorEntered()
 {
 	m_bMouseOver = true;
+
 	Color rarityColor = GetRarityColor();
 
 	SetBgColor( Color(
@@ -886,6 +888,17 @@ void CInventoryPanel::OnMenuCommand( KeyValues *data )
 	CSWeaponID weaponID = m_pContextMenu->GetCurrentWeaponID();
 	InventoryItemType_t itemType = m_pContextMenu->GetItemType();
 
+	if ( Q_stricmp( pszCommand, "preview" ) == 0 )
+	{
+		KeyValues *pPreview = new KeyValues( "PreviewItem" );
+		pPreview->SetInt( "weaponid", weaponID );
+		pPreview->SetInt( "paintkit", iPaintKit );
+		PostActionSignal( pPreview );
+
+		m_pContextMenu->SetVisible( false );
+		return;
+	}
+
 	if ( Q_stricmp( pszCommand, "unequip" ) == 0 )
 	{
 		UnequipItem( weaponID, itemType );
@@ -998,6 +1011,7 @@ CModOptionsSubInventory::CModOptionsSubInventory( vgui::Panel *parent )
 	: BaseClass( parent, "ModOptionsSubInventory" )
 {
 	m_pInventoryPanel = NULL;
+	m_pPreviewDialog = NULL;
 	m_pShowAllButton = NULL;
 	m_pWeaponFilter = NULL;
 	m_pRarityFilter = NULL;
@@ -1020,6 +1034,7 @@ void CModOptionsSubInventory::CreateControls()
 	if ( !m_pInventoryPanel )
 	{
 		m_pInventoryPanel = new vgui::CInventoryPanel( this, "InventoryPanel" );
+		m_pInventoryPanel->AddActionSignalTarget( this );
 	}
 
 	if ( !m_pShowAllButton )
@@ -1093,11 +1108,11 @@ void CModOptionsSubInventory::PerformLayout()
 
 	int contentTop = padding + controlHeight + padding;
 
+	int contentHeight = tall - contentTop - padding;
+
 	if ( m_pInventoryPanel )
 	{
-		m_pInventoryPanel->SetBounds( padding, contentTop,
-			wide - padding * 2,
-			tall - contentTop - padding );
+		m_pInventoryPanel->SetBounds( padding, contentTop, wide - padding * 2, contentHeight );
 		m_pInventoryPanel->InvalidateLayout( true );
 	}
 }
@@ -1169,6 +1184,26 @@ void CModOptionsSubInventory::OnTextChanged( vgui::Panel *panel )
 			m_pInventoryPanel->ClearFilters();
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CModOptionsSubInventory::OnPreviewItem( KeyValues *data )
+{
+	CSWeaponID weaponID = (CSWeaponID)data->GetInt( "weaponid", WEAPON_NONE );
+	int iPaintKit = data->GetInt( "paintkit", 0 );
+
+	if ( weaponID == WEAPON_NONE || iPaintKit <= 0 )
+		return;
+
+	if ( !m_pPreviewDialog )
+	{
+		m_pPreviewDialog = new CInventoryPreviewDialog( this, "InventoryPreviewDialog" );
+	}
+
+	const SkinDefinition_t *pSkinDef = g_SkinDatabase.FindSkinByPaintKit( iPaintKit );
+	m_pPreviewDialog->PreviewItem( weaponID, iPaintKit, pSkinDef ? pSkinDef->szName : NULL );
 }
 
 //-----------------------------------------------------------------------------

@@ -253,6 +253,8 @@ $Project "GameUI"
 		$File	"ModOptionsSubInventory.h"
 		$File	"vgui_item_context_menu.cpp"
 		$File	"vgui_item_context_menu.h"
+		$File	"vgui_inventory_preview.cpp"
+		$File	"vgui_inventory_preview.h"
 	}
 	
 	$Folder	"Link Libraries"
