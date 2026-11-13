@@ -122,7 +122,7 @@ class C_OP_RenderPoints : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderPointsContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const override
 	{
 		C_OP_RenderPointsContext_t *pCtx = reinterpret_cast<C_OP_RenderPointsContext_t *>( pContext );
 		pCtx->m_VisibilityData.m_bUseVisibility = false;
@@ -242,7 +242,7 @@ class C_OP_RenderSprites : public C_OP_RenderPoints
 		return sizeof( C_OP_RenderSpritesContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const override
 	{
 		C_OP_RenderSpritesContext_t *pCtx = reinterpret_cast<C_OP_RenderSpritesContext_t *>( pContext );
 		pCtx->m_nOrientationVarToken = 0;
@@ -1385,7 +1385,7 @@ class C_OP_RenderSpritesTrail : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderSpriteTrailContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const override
 	{
 		C_OP_RenderSpriteTrailContext_t *pCtx = reinterpret_cast<C_OP_RenderSpriteTrailContext_t *>( pContext );
 		if ( VisibilityInputs.m_nCPin >= 0 )
@@ -1707,7 +1707,7 @@ class C_OP_RenderRope : public CParticleOperatorInstance
 			PARTICLE_ATTRIBUTE_TINT_RGB_MASK | PARTICLE_ATTRIBUTE_ALPHA_MASK;
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const override
 	{
 		RenderRopeContext_t *pCtx = reinterpret_cast<RenderRopeContext_t *>( pContext );
 		pCtx->m_flRenderedRopeLength = false;
@@ -2190,7 +2190,7 @@ class C_OP_RenderBlobs : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderBlobsContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const override
 	{
 		C_OP_RenderBlobsContext_t *pCtx = reinterpret_cast<C_OP_RenderBlobsContext_t *>( pContext );
 		if ( VisibilityInputs.m_nCPin >= 0 )
@@ -2357,7 +2357,7 @@ class C_OP_RenderScreenVelocityRotate : public CParticleRenderOperatorInstance
 		return sizeof( C_OP_RenderScreenVelocityRotateContext_t );
 	}
 
-	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext, const Vector4D &vecDiffuseModulation ) const
+	virtual void InitializeContextData( CParticleCollection *pParticles, void *pContext ) const override
 	{
 		C_OP_RenderScreenVelocityRotateContext_t *pCtx = reinterpret_cast<C_OP_RenderScreenVelocityRotateContext_t *>( pContext );
 		if ( VisibilityInputs.m_nCPin >= 0 )
