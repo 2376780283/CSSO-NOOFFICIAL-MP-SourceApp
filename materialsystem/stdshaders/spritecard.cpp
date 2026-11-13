@@ -97,6 +97,7 @@ SHADER_PARAM( USEINSTANCING, SHADER_PARAM_TYPE_BOOL, "1", "whether to use GPU ve
 SHADER_PARAM( SPLINETYPE, SHADER_PARAM_TYPE_INTEGER, "0", "spline type 0 = none,  1=ctamull rom")
 SHADER_PARAM( MAXDISTANCE, SHADER_PARAM_TYPE_FLOAT, "100000.0", "maximum distance to draw particles at")
 SHADER_PARAM( FARFADEINTERVAL, SHADER_PARAM_TYPE_FLOAT, "400.0", "interval over which to fade out far away particles")
+SHADER_PARAM( MOD2X, SHADER_PARAM_TYPE_BOOL, "0", "whether or not to multiply the result of the pixel shader * 2 against the framebuffer" )
 END_SHADER_PARAMS
 
 SHADER_INIT_PARAMS()
@@ -209,6 +210,7 @@ SHADER_DRAW
 	SHADOW_STATE
 	{
 		bool bSecondSequence = params[DUALSEQUENCE]->GetIntValue() != 0;
+		bool bMod2X = params[MOD2X]->GetIntValue() != 0 && !bDX8;
 		bool bAddOverBlend = params[ADDOVERBLEND]->GetIntValue() != 0;
 		bool bExtractGreenAlpha = (! bDX8 ) && ( params[EXTRACTGREENALPHA]->GetIntValue() != 0 );
 		bool bBlendFrames = (! bDX8 ) && ( params[BLENDFRAMES]->GetIntValue() != 0 );
@@ -252,7 +254,11 @@ SHADER_DRAW
 
 		pShaderShadow->AlphaFunc( SHADER_ALPHAFUNC_GREATER, 0.01f );
 
-		if ( bAdditive2ndTexture || bAddOverBlend || bAddSelf )
+		if ( bMod2X )
+		{
+			EnableAlphaBlending( SHADER_BLEND_DST_COLOR, SHADER_BLEND_SRC_COLOR );
+		}
+		else if ( bAdditive2ndTexture || bAddOverBlend || bAddSelf )
 		{
 			EnableAlphaBlending( SHADER_BLEND_ONE, SHADER_BLEND_ONE_MINUS_SRC_ALPHA );
 		}
@@ -358,6 +364,7 @@ SHADER_DRAW
 				SET_STATIC_PIXEL_SHADER_COMBO( COLORRAMP, bUseRampTexture );
 				SET_STATIC_PIXEL_SHADER_COMBO( EXTRACTGREENALPHA, bExtractGreenAlpha );
 				SET_STATIC_PIXEL_SHADER_COMBO( DEPTHBLEND, bDepthBlend );
+				SET_STATIC_PIXEL_SHADER_COMBO( MOD2X, bMod2X );
 				SET_STATIC_PIXEL_SHADER( spritecard_ps20b );
 			}
 			else
@@ -372,6 +379,7 @@ SHADER_DRAW
 				SET_STATIC_PIXEL_SHADER_COMBO( MAXLUMFRAMEBLEND2, bSecondSequence? params[MAXLUMFRAMEBLEND1]->GetIntValue() : 0 );
 				SET_STATIC_PIXEL_SHADER_COMBO( COLORRAMP, bUseRampTexture );
 				SET_STATIC_PIXEL_SHADER_COMBO( EXTRACTGREENALPHA, bExtractGreenAlpha );
+				SET_STATIC_PIXEL_SHADER_COMBO( MOD2X, bMod2X );
 				SET_STATIC_PIXEL_SHADER( spritecard_ps20 );
 			}
 
@@ -424,7 +432,7 @@ SHADER_DRAW
 
 		// set fade constants in vsconsts 8 and 9
 		float flMaxDistance = params[MAXDISTANCE]->GetFloatValue();
-		float flStartFade = max( 1.f, flMaxDistance - params[FARFADEINTERVAL]->GetFloatValue() );
+		float flStartFade = MAX( 1.f, flMaxDistance - params[FARFADEINTERVAL]->GetFloatValue() );
 
 		float VC0[8]={ params[MINSIZE]->GetFloatValue(), params[MAXSIZE]->GetFloatValue(),
 			params[STARTFADESIZE]->GetFloatValue(), params[ENDFADESIZE]->GetFloatValue(),
@@ -447,6 +455,11 @@ SHADER_DRAW
 		}
 
 		pShaderAPI->SetPixelShaderConstant( 0, C0, ARRAYSIZE(C0)/4 );
+
+		// Set Mod2xIdentity to be 0.5 if we blend in linear space, or 0.5 Gamma->Linear if we blend in gamma space
+		float vPsConst1[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		vPsConst1[0] = g_pHardwareConfig->UsesSRGBCorrectBlending() ? 0.5f : SrgbGammaToLinear( 0.5f );
+		pShaderAPI->SetPixelShaderConstant( 1, vPsConst1, 1 );
 
 		if ( g_pHardwareConfig->GetDXSupportLevel() < 90 )
 		{
