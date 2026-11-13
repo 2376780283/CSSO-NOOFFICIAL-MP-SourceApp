@@ -218,7 +218,7 @@ bool CCSPlayer::IsInBuyPeriod()
 
 bool CCSPlayer::CanBuyDuringImmunity()
 {
-	return ( mp_buy_during_immunity.GetInt() == 1 ) || ( mp_buy_during_immunity.GetInt() == GetTeamNumber() ); 
+	return ( mp_buy_during_immunity.GetInt() == 1 ) || ( mp_buy_during_immunity.GetInt() == GetTeamNumber() );
 }
 
 bool CCSPlayer::IsAbleToInstantRespawn( void )
@@ -237,7 +237,7 @@ bool CCSPlayer::IsAbleToInstantRespawn( void )
 	}
 
 	// if we use respawn waves AND the next respawn wave is past AND our team is able to respawn OR it is the warmup period
-	return (	CSGameRules() && ( ( mp_respawn_on_death_ct.GetBool() && GetTeamNumber() == TEAM_CT ) || 
+	return (	CSGameRules() && ( ( mp_respawn_on_death_ct.GetBool() && GetTeamNumber() == TEAM_CT ) ||
 		( mp_respawn_on_death_t.GetBool() && GetTeamNumber() == TEAM_TERRORIST ) ) );
 }
 
@@ -280,7 +280,7 @@ float CCSPlayer::GetPlayerMaxSpeed()
 
 bool CCSPlayer::IsPrimaryOrSecondaryWeapon( CSWeaponType nType )
 {
-	if ( nType == WEAPONTYPE_PISTOL || nType == WEAPONTYPE_SUBMACHINEGUN || nType == WEAPONTYPE_RIFLE ||  
+	if ( nType == WEAPONTYPE_PISTOL || nType == WEAPONTYPE_SUBMACHINEGUN || nType == WEAPONTYPE_RIFLE ||
 		nType == WEAPONTYPE_SHOTGUN || nType == WEAPONTYPE_SNIPER_RIFLE || nType == WEAPONTYPE_MACHINEGUN )
 	{
 		return true;
@@ -311,7 +311,7 @@ bool CCSPlayer::IsOtherEnemy( int nEntIndex )
 	if ( !pPlayer )
 	{
 		// client doesn't have a pointer to enemy players outside our PVS
-#if defined ( CLIENT_DLL )	
+#if defined ( CLIENT_DLL )
 
 		// we are never an enemy of ourselves
 		if ( entindex() == nEntIndex )
@@ -407,7 +407,7 @@ bool CCSPlayer::IsOtherEnemy( CCSPlayer *pPlayer )
 	// we are never an enemy of ourselves
 	if ( entindex() == pPlayer->entindex() )
 		return false;
-	
+
 	int nOtherTeam = pPlayer->GetTeamNumber();
 
 	int nTeam = GetTeamNumber();
@@ -516,10 +516,10 @@ CBaseEntity *CCSPlayer::GetUsableHighPriorityEntity( void )
 				continue; // not used by the player
 			if ( cfgUseSettings.m_ePriority < cfgBestHighPriorityEntity.m_ePriority )
 				continue; // we already have a higher priority entity
-			
+
 			if ( !cfgUseSettings.UseByPlayerNow( this, cfgUseSettings.k_EPlayerUseType_Start ) )
 				continue; // cannot start use by the player right now
-				
+
 			// This high-priority entity passes the checks, remember it as best
 			if ( cfgUseSettings.IsBetterForUseThan( cfgBestHighPriorityEntity ) )
 				cfgBestHighPriorityEntity = cfgUseSettings;
@@ -612,7 +612,7 @@ void CCSPlayer::GiveCarriedHostage( EHANDLE hHostage )
 
 void CCSPlayer::RefreshCarriedHostage( bool bForceCreate )
 {
-#ifndef CLIENT_DLL 
+#ifndef CLIENT_DLL
 	if ( m_hCarriedHostage == NULL )
 		return;
 
@@ -689,7 +689,7 @@ void CCSPlayer::RemoveCarriedHostage( void )
 {
 	m_hCarriedHostage = NULL;
 
-#ifndef CLIENT_DLL 
+#ifndef CLIENT_DLL
 	if ( m_hCarriedHostageProp )
 	{
 		CBaseAnimating *pHostageProp = dynamic_cast< CBaseAnimating* >(m_hCarriedHostageProp.Get());
@@ -867,7 +867,7 @@ static bool TraceToExit( CCSPlayer *pPlayer, Vector start, Vector dir, Vector &e
 
 		if ( nStartContents == 0 )
 			nStartContents = UTIL_PointContents( end );
-		
+
 		int nCurrentContents = UTIL_PointContents( end );
 
 		if ( (nCurrentContents & CS_MASK_SHOOT) == 0 || ((nCurrentContents & CONTENTS_HITBOX) && nStartContents != nCurrentContents) )
@@ -878,7 +878,7 @@ static bool TraceToExit( CCSPlayer *pPlayer, Vector start, Vector dir, Vector &e
 			// we exited the wall into a player's hitbox
 			if ( trExit.startsolid == true && (trExit.surface.flags & SURF_HITBOX)/*( nStartContents & CONTENTS_HITBOX ) == 0 && (nCurrentContents & CONTENTS_HITBOX)*/ )
 			{
-				// do another trace, but skip the player to get the actual exit surface 
+				// do another trace, but skip the player to get the actual exit surface
 				UTIL_TraceLine( end, start, CS_MASK_SHOOT, trExit.m_pEnt, COLLISION_GROUP_NONE, &trExit );
 				if ( trExit.DidHit() && trExit.startsolid == false )
 				{
@@ -948,10 +948,10 @@ struct DelayedDamageInfoData_t
 };
 #endif
 
-void CCSPlayer::FireBullet( 
+void CCSPlayer::FireBullet(
 	Vector vecSrc,	// shooting postion
 	const QAngle &shootAngles,  //shooting angle
-	float flDistance, // max distance 
+	float flDistance, // max distance
 	float flPenetration, // the power of the penetration
 	int nPenetrationCount,
 	int iBulletType, // ammo type
@@ -964,10 +964,10 @@ void CCSPlayer::FireBullet(
 {
 	float fCurrentDamage = iDamage;   // damage of the bullet at it's current trajectory
 	float flCurrentDistance = 0.0;  //distance that the bullet has traveled so far
-		
+
 	Vector vecDirShooting, vecRight, vecUp;
 	AngleVectors( shootAngles, &vecDirShooting, &vecRight, &vecUp );
-	
+
 	// MIKETODO: put all the ammo parameters into a script file and allow for CS-specific params.
 	float flPenetrationPower = 0;		// thickness of a wall that this bullet can penetrate
 	float flPenetrationDistance = 0;	// distance at which the bullet is capable of penetrating a wall
@@ -978,12 +978,12 @@ void CCSPlayer::FireBullet(
 
 	// we use the max penetrations on this gun to figure out how much penetration it's capable of
 	if ( sv_penetration_type.GetInt() == 1 )
-		flPenetrationPower = flPenetration; 
+		flPenetrationPower = flPenetration;
 
 	if ( !pevAttacker )
 		pevAttacker = this;  // the default attacker is ourselves
 
-	// add the spray 
+	// add the spray
 	Vector vecDir = vecDirShooting + xSpread * vecRight + ySpread * vecUp;
 
 	VectorNormalize( vecDir );
@@ -991,15 +991,15 @@ void CCSPlayer::FireBullet(
 
 	//Adrian: visualize server/client player positions
 	//This is used to show where the lag compesator thinks the player should be at.
-#if 0 
+#if 0
 	for ( int k = 1; k <= gpGlobals->maxClients; k++ )
 	{
 		CBasePlayer *clientClass = (CBasePlayer *)CBaseEntity::Instance( k );
 
-		if ( clientClass == NULL ) 
+		if ( clientClass == NULL )
 			 continue;
 
-		if ( k == entindex() ) 
+		if ( k == entindex() )
 			 continue;
 
 #ifdef CLIENT_DLL
@@ -1107,7 +1107,7 @@ void CCSPlayer::FireBullet(
 #endif
 
 
-#if defined( _DEBUG ) && !defined( CLIENT_DLL )	
+#if defined( _DEBUG ) && !defined( CLIENT_DLL )
 		if ( bFirstHit )
 			AddBulletStat( gpGlobals->realtime, VectorLength( vecSrc-tr.endpos), tr.endpos );
 #endif
@@ -1144,7 +1144,7 @@ void CCSPlayer::FireBullet(
 		{
 			// draw red client impact markers
 			debugoverlay->AddBoxOverlay( tr.endpos, Vector(-2,-2,-2), Vector(2,2,2), QAngle( 0, 0, 0), 255,0,0,127, 4 );
-		}		
+		}
 
 #else
 		if ( sv_showimpacts.GetInt() == 1 || sv_showimpacts.GetInt() == 3 )
@@ -1203,10 +1203,10 @@ void CCSPlayer::FireBullet(
 		{
 			// See if the bullet ended up underwater + started out of the water
 			if ( enginetrace->GetPointContents( tr.endpos ) & (CONTENTS_WATER|CONTENTS_SLIME) )
-			{	
+			{
 				trace_t waterTrace;
 				UTIL_TraceLine( vecSrc, tr.endpos, (MASK_SHOT|CONTENTS_WATER|CONTENTS_SLIME), this, COLLISION_GROUP_NONE, &waterTrace );
-				
+
 				if( waterTrace.allsolid != 1 )
 				{
 					CEffectData	data;
@@ -1253,7 +1253,7 @@ void CCSPlayer::FireBullet(
 #endif
 
 		// add damage to entity that we hit
-		
+
 #ifndef CLIENT_DLL
 		CBaseEntity *pEntity = tr.m_pEnt;
 
@@ -1349,7 +1349,7 @@ void CCSPlayer::FireBullet(
 			data.m_vAngles = temp;
 			//data.m_vNormal = vecWallBangHitStart - vecWallBangHitEnd;
 			data.m_flScale = 1.0f;
-			
+
 			if ( bWallBangHeavyVersion )
 			{
 				DispatchEffect( "impact_wallbang_heavy", data );
@@ -1407,7 +1407,7 @@ bool CCSPlayer::HandleBulletPenetration( float &flPenetration,
 	bool bFailedPenetrate = false;
 
 	// check if bullet can penetrarte another entity
-	if ( nPenetrationCount == 0 && !hitGrate && !bIsNodraw 
+	if ( nPenetrationCount == 0 && !hitGrate && !bIsNodraw
 		 && iEnterMaterial != CHAR_TEX_GLASS && iEnterMaterial != CHAR_TEX_GRATE )
 		bFailedPenetrate = true; // no, stop
 
@@ -1427,7 +1427,7 @@ bool CCSPlayer::HandleBulletPenetration( float &flPenetration,
 			bFailedPenetrate = true;
 		}
 	}
-	
+
 	if ( bFailedPenetrate == true )
 	{
 		return true;
@@ -1460,7 +1460,7 @@ bool CCSPlayer::HandleBulletPenetration( float &flPenetration,
 
 			flDamageModifier = 0.99f;
 		}
-		else if ( iEnterMaterial == CHAR_TEX_FLESH && ff_damage_reduction_bullets.GetFloat() == 0 
+		else if ( iEnterMaterial == CHAR_TEX_FLESH && ff_damage_reduction_bullets.GetFloat() == 0
 				  && tr.m_pEnt && tr.m_pEnt->IsPlayer() && tr.m_pEnt->GetTeamNumber() == GetTeamNumber() )
 		{
 			if ( ff_damage_bullet_penetration.GetFloat() == 0 )
@@ -1482,7 +1482,7 @@ bool CCSPlayer::HandleBulletPenetration( float &flPenetration,
 			flDamageModifier = (flDamageModifier + flExitDamageModifier)/2;
 		}
 
-		// if enter & exit point is wood we assume this is 
+		// if enter & exit point is wood we assume this is
 		// a hollow crate and give a penetration bonus
 		if ( iEnterMaterial == iExitMaterial )
 		{
@@ -1505,7 +1505,7 @@ bool CCSPlayer::HandleBulletPenetration( float &flPenetration,
 
 		float flLostDamageObject = ((flPenMod * (flTraceDistance*flTraceDistance)) / 24);
 		float flTotalLostDamage = flPenWepMod + flLostDamageObject;
-		
+
 		// reduce damage power each time we hit something other than a grate
 		fCurrentDamage -= MAX( 0, flTotalLostDamage );
 
@@ -1567,7 +1567,7 @@ bool CCSPlayer::HandleBulletPenetration( float &flPenetration,
 			}
 		}
 
-		// if enter & exit point is wood or metal we assume this is 
+		// if enter & exit point is wood or metal we assume this is
 		// a hollow crate or barrel and give a penetration bonus
 		if ( iEnterMaterial == iExitMaterial )
 		{
@@ -1702,7 +1702,7 @@ void CCSPlayer::CreateWeaponTracer( Vector vecStart, Vector vecEnd )
 		{
 			bUseObserverTarget = true;
 		}
-		
+
 		C_BaseCombatWeapon *pActiveWeapon = GetActiveWeapon();
 		C_BaseViewModel *pViewModel = GetViewModel(0);
 
@@ -1765,7 +1765,7 @@ void CCSPlayer::CreateWeaponTracer( Vector vecStart, Vector vecEnd )
 			// just do the whiz sound
 			FX_TracerSound( vecStart, vecEnd, TRACER_TYPE_DEFAULT );
 		}
-		
+
 	}
 }
 #endif
@@ -1854,6 +1854,34 @@ bool CCSPlayer::CanMove() const
 	}
 }
 
+bool CCSPlayer::ShouldCollide( int collisionGroup, int contentsMask ) const
+{
+	if ( collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT )
+	{
+		const unsigned int teamBits = CONTENTS_TEAM1 | CONTENTS_TEAM2;
+		const unsigned int myTeamMask = PhysicsSolidMaskForEntity() & teamBits;
+		const unsigned int otherTeamMask = contentsMask & teamBits;
+
+		// The movement trace carries the moving player's team. Only filter
+		// player collisions when both sides have an unambiguous team tag.
+		if ( ( myTeamMask == CONTENTS_TEAM1 || myTeamMask == CONTENTS_TEAM2 ) &&
+			 ( otherTeamMask == CONTENTS_TEAM1 || otherTeamMask == CONTENTS_TEAM2 ) )
+		{
+			if ( myTeamMask == otherTeamMask )
+			{
+				if ( !CSGameRules()->IsTeammateSolid() )
+					return false;
+			}
+			else if ( !CSGameRules()->IsEnemySolid() )
+			{
+				return false;
+			}
+		}
+	}
+
+	return BaseClass::ShouldCollide( collisionGroup, contentsMask );
+}
+
 unsigned int CCSPlayer::PhysicsSolidMaskForEntity( void ) const
 {
 	if ( !CSGameRules()->IsTeammateSolid() || !CSGameRules()->IsEnemySolid() )
@@ -1931,7 +1959,7 @@ void CCSPlayer::OnLand( float fVelocity )
 			EmitSound(filter, entindex(), "Default.Land");
 			return;
 		}
-		
+
 		EmitSound_t LandSound;
 		LandSound.m_nChannel = params.channel;
 		LandSound.m_pSoundName = params.soundname;
@@ -1940,7 +1968,7 @@ void CCSPlayer::OnLand( float fVelocity )
 		LandSound.m_nFlags = 0;
 		LandSound.m_nPitch = params.pitch;
 		LandSound.m_pOrigin = &this->GetAbsOrigin();
-		
+
 		EmitSound(filter, entindex(), LandSound);
 	}
 }
@@ -2213,7 +2241,7 @@ AcquireResult::Type CCSPlayer::CanAcquire( CSWeaponID weaponId, AcquireMethod::T
 	}
 
 	// additional constraints for purchasing weapons
-	if ( acquireMethod == AcquireMethod::Buy || 
+	if ( acquireMethod == AcquireMethod::Buy ||
 		 acquireMethod == AcquireMethod::BuyDrop )
 	{
 		if ( pWeaponInfo->m_iTeam != TEAM_UNASSIGNED && GetTeamNumber() != pWeaponInfo->m_iTeam )
@@ -2236,8 +2264,8 @@ AcquireResult::Type CCSPlayer::CanAcquire( CSWeaponID weaponId, AcquireMethod::T
 		}
 
 		if ( CSLoadout()->IsKnife(weaponId) )
-		{ 
-			return AcquireResult::NotAllowedForPurchase; 
+		{
+			return AcquireResult::NotAllowedForPurchase;
 		}
 
 		// Validate that each player can buy only so many instances of same weapon type
@@ -2260,7 +2288,7 @@ int CCSPlayer::GetWeaponPrice( CSWeaponID weaponId ) const
 
 	if (  weaponId == WEAPON_NONE )
 		return -1;
-		
+
 	bool bHasFullArmor = (ArmorValue() >= 100);
 
 	// special case handling for reduced cost of Kevlar + helmet
@@ -2297,7 +2325,7 @@ int CCSPlayer::GetWeaponPrice( CSWeaponID weaponId ) const
 bool CCSPlayer::HasWeaponOfType( int nWeaponID ) const
 {
 	for ( int i = 0; i < WeaponCount(); ++i )
-	{		
+	{
 		CWeaponCSBase *pWeapon = dynamic_cast< CWeaponCSBase* > ( GetWeapon( i ) );
 
 		if ( pWeapon && pWeapon->GetCSWeaponID() == nWeaponID )
@@ -2317,7 +2345,7 @@ bool CCSPlayer::UpdateDispatchLayer( CAnimationLayer *pLayer, CStudioHdr *pWeapo
 		if ( pLayer )
 			pLayer->m_nDispatchedDst = ACT_INVALID;
 		return false;
-	}	
+	}
 
 	if ( pLayer->m_pDispatchedStudioHdr != pWeaponStudioHdr || pLayer->m_nDispatchedSrc != iSequence || pLayer->m_nDispatchedDst >= pWeaponStudioHdr->GetNumSeq() )
 	{
@@ -2326,7 +2354,7 @@ bool CCSPlayer::UpdateDispatchLayer( CAnimationLayer *pLayer, CStudioHdr *pWeapo
 		if ( pWeaponStudioHdr )
 		{
 			const char *pszSeqName = GetSequenceName( iSequence );
-			
+
 #ifdef DEBUG
 			if ( V_stristr( pszSeqName, "default" ) )
 			{
@@ -2371,7 +2399,7 @@ bool CCSPlayer::UpdateLayerWeaponDispatch( CAnimationLayer *pLayer, int iSequenc
 	return UpdateDispatchLayer( pLayer, NULL, iSequence );
 }
 
-float CCSPlayer::GetLayerSequenceCycleRate( CAnimationLayer *pLayer, int iSequence ) 
+float CCSPlayer::GetLayerSequenceCycleRate( CAnimationLayer *pLayer, int iSequence )
 {
 	if ( iSequence > 0 )
 		UpdateLayerWeaponDispatch( pLayer, iSequence );

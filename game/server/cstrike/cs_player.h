@@ -52,7 +52,7 @@ class CCSPlayerStateInfo
 public:
 	CSPlayerState m_iPlayerState;
 	const char *m_pStateName;
-	
+
 	void (CCSPlayer::*pfnEnterState)();	// Init and deinit the state.
 	void (CCSPlayer::*pfnLeaveState)();
 
@@ -103,7 +103,7 @@ private:
 
 	char m_szPlayerDamagerName[MAX_PLAYER_NAME_LENGTH];
 	char m_szPlayerRecipientName[MAX_PLAYER_NAME_LENGTH];
-	
+
 	int m_iDamage;		//how much damage was delivered
 	int m_iActualHealthRemoved;		//how much damage was actually applied
 	int m_iNumHits;		//how many hits
@@ -209,7 +209,7 @@ enum BuyResult_e
 // [tj] The phases for the "Goose Chase" achievement
 enum GooseChaseAchievementStep
 {
-    GC_NONE,    
+    GC_NONE,
     GC_SHOT_DURING_DEFUSE,
     GC_STOPPED_AFTER_GETTING_SHOT
 };
@@ -219,9 +219,9 @@ enum DefuseDefenseAchivementStep
 {
     DD_NONE,
     DD_STARTED_DEFUSE,
-    DD_KILLED_TERRORIST       
+    DD_KILLED_TERRORIST
 };
- 
+
 //=============================================================================
 // HPE_END
 //=============================================================================
@@ -251,7 +251,7 @@ public:
 	virtual void		UpdateOnRemove( void );
 
 	void SetCSSpawnLocation( Vector position, QAngle angle );
-	
+
 	virtual void		CheatImpulseCommands( int iImpulse );
 	virtual void		PlayerRunCommand( CUserCmd *ucmd, IMoveHelper *moveHelper );
 	virtual void		PostThink();
@@ -265,7 +265,7 @@ public:
 	// HPE_BEGIN:
 	// [tj] We have a custom implementation so we can check for achievements.
 	//=============================================================================
-	
+
 	virtual void		Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &info );
 
 	//=============================================================================
@@ -277,10 +277,10 @@ public:
 	virtual CBaseEntity	*GiveNamedItem( const char *pszName, int iSubType = 0 );
 	virtual bool		IsBeingGivenItem() const { return m_bIsBeingGivenItem; }
 			void		DropNamedItem( const char* pszName );
-	
+
 	virtual CBaseEntity *FindUseEntity( void );
 	virtual bool		IsUseableEntity( CBaseEntity *pEntity, unsigned int requiredCaps );
-	
+
 	virtual void		CreateViewModel( int viewmodelindex = WEAPON_VIEWMODEL );
 	virtual void		ShowViewPortPanel( const char * name, bool bShow = true, KeyValues *data = NULL );
 
@@ -291,8 +291,8 @@ public:
 	// from CBasePlayer
 	virtual void		SetupVisibility( CBaseEntity *pViewEntity, unsigned char *pvs, int pvssize );
 
-	virtual	bool		ShouldCollide( int collisionGroup, int contentsMask ) const;
-	
+	virtual	bool		ShouldCollide( int collisionGroup, int contentsMask ) const override;
+
 	// from CBasePlayer
 	virtual bool		IsValidObserverTarget(CBaseEntity * target);
 	virtual CBaseEntity* FindNextObserverTarget( bool bReverse );
@@ -347,9 +347,9 @@ public:
 		float fAngle,
 		float fMagnitude );
 
-	void GetBulletTypeParameters( 
-		int iBulletType, 
-		float &fPenetrationPower, 
+	void GetBulletTypeParameters(
+		int iBulletType,
+		float &fPenetrationPower,
 		float &flPenetrationDistance );
 
 	// Returns true if the player is allowed to move.
@@ -390,7 +390,7 @@ public:
 
 	virtual void UpdateStepSound( surfacedata_t *psurface, const Vector &vecOrigin, const Vector &vecVelocity  );
 	virtual void PlayStepSound( Vector &vecOrigin, surfacedata_t *psurface, float fvol, bool force );
-	
+
 	// from cbasecombatcharacter
 	void InitVCollision( const Vector &vecAbsOrigin, const Vector &vecAbsVelocity );
 	void VPhysicsShadowUpdate( IPhysicsObject *pPhysics );
@@ -465,14 +465,14 @@ public:
 	virtual bool ShouldPickupItemSilently( CBaseCombatCharacter *pNewOwner );
 
 	void DropC4();	// Get rid of the C4 bomb.
-	
+
 	CNetworkHandle( CBaseEntity, m_hCarriedHostage );	// networked entity handle
 	void GiveCarriedHostage( EHANDLE hHostage );
 	void RefreshCarriedHostage( bool bForceCreate );
 	void RemoveCarriedHostage();
 	CNetworkHandle( CBaseEntity, m_hCarriedHostageProp );	// networked entity handle
 	EHANDLE	m_hHostageViewModel;
-	
+
 	bool HasDefuser();		// Is this player carrying a bomb defuser?
 	void GiveDefuser(bool bPickedUp = false);		// give the player a defuser
 	void RemoveDefuser();	// remove defuser from the player and remove the model attachment
@@ -545,7 +545,7 @@ public:
 	void HandleMenu_Radio2( int slot );
 	void HandleMenu_Radio3( int slot );
 
-	float m_flRadioTime;	
+	float m_flRadioTime;
 	int m_iRadioMessages;
 	int iRadioMenu;
 
@@ -562,7 +562,7 @@ public:
 	void GetIntoGame();
 
 	CBaseEntity* EntSelectSpawnPoint();
-	
+
 	void SetProgressBarTime( int barTime );
 	virtual void PlayerDeathThink();
 
@@ -580,9 +580,9 @@ public:
 	void ResetStamina( void );
 	bool IsArmored( int nHitGroup );
 	void Pain( CCSPlayer* attacker, bool HasArmour, int nDmgTypeBits = 0 );
-	
+
 	void DeathSound( const CTakeDamageInfo &info );
-	
+
 	bool Weapon_CanSwitchTo( CBaseCombatWeapon *pWeapon );
 	virtual void OnSwitchWeapons( CBaseCombatWeapon* pWeapon );
 	void ChangeTeam( int iTeamNum );
@@ -619,7 +619,7 @@ private:
 	void State_Enter( CSPlayerState newState );		// Initialize the new state.
 	void State_Leave();								// Cleanup the previous state.
 	void State_PreThink();							// Update the current state.
-	
+
 	// Find the state info for the specified state.
 	static CCSPlayerStateInfo* State_LookupInfo( CSPlayerState state );
 
@@ -678,7 +678,7 @@ public:
 
 	int GetNumConcurrentDominations( void );
 	void GiveWeaponFromID( int nWeaponID );
-	
+
 	void				SelectDeathPose( const CTakeDamageInfo &info );
 
 	bool				MadeFinalGunGameProgressiveKill( void ) { return m_bMadeFinalGunGameProgressiveKill; }
@@ -688,7 +688,7 @@ private:
 	int	m_iDeathFrame;
 	float m_flDeathYaw;
 
-// [menglish] Freeze cam function and variable declarations	 
+// [menglish] Freeze cam function and variable declarations
 	bool m_bAbortFreezeCam;
 
 	bool m_bRespawning;
@@ -786,7 +786,7 @@ public:
 	bool m_bTeamChanged;		// Just allow one team change per round
 	CNetworkVar( int, m_iAccount );	// How much cash this player has.
 	int m_iShouldHaveCash;
-	
+
 	bool m_bJustKilledTeammate;
 	bool m_bPunishedForTK;
 	int m_iTeamKills;
@@ -864,25 +864,25 @@ public:
 	CNetworkVar( float, m_flGroundAccelLinearFracLastTime );
 
 	int	m_iHostagesKilled;
-	
+
 	char m_szNewName [MAX_PLAYER_NAME_LENGTH]; // not empty if player requested a namechange
 	char m_szClanTag[MAX_CLAN_TAG_LENGTH];
 	char m_szClanName[MAX_TEAM_NAME_LENGTH];
 
 	Vector m_vecTotalBulletForce;	//Accumulator for bullet force in a single frame
-	
+
 	CNetworkVar( float, m_flFlashDuration );
 	CNetworkVar( float, m_flFlashMaxAlpha );
-	
+
 	CNetworkVar( float, m_flProgressBarStartTime );
 	CNetworkVar( int, m_iProgressBarDuration );
 	CNetworkVar( int, m_iThrowGrenadeCounter );	// used to trigger grenade throw animations.
-	
+
 	CNetworkVar( float, m_flLowerBodyYawTarget );
 	CNetworkVar( bool, m_bStrafing );
-	
+
 	// Tracks our ragdoll entity.
-	CNetworkHandle( CBaseEntity, m_hRagdoll );	// networked entity handle 
+	CNetworkHandle( CBaseEntity, m_hRagdoll );	// networked entity handle
 
 	// Bots and hostages auto-duck during jumps
 	bool m_duckUntilOnGround;
@@ -959,19 +959,19 @@ protected:
 	void TransferInventory( CCSPlayer* pTargetPlayer );
 	bool DropRifle( bool fromDeath = false );
 	bool DropPistol( bool fromDeath = false );
-	
+
     //=============================================================================
     // HPE_BEGIN:
     // [tj] Added a parameter so we know if it was death that caused the drop
 	// [menglish] New parameter to always know if this is from death and not just an enemy death
     //=============================================================================
-     
+
     void DropWeapons( bool fromDeath, bool friendlyFire );
-     
+
     //=============================================================================
     // HPE_END
     //=============================================================================
-    
+
 
 	virtual int SpawnArmorValue( void ) const { return ArmorValue(); }
 
@@ -982,7 +982,7 @@ protected:
 	BuyResult_e AttemptToBuyAssaultSuit( void );
 	BuyResult_e AttemptToBuyDefuser( void );
 	BuyResult_e AttemptToBuyNightVision( void );
-	
+
 	BuyResult_e BuyAmmo( int nSlot, bool bBlinkMoney );
 	BuyResult_e BuyGunAmmo( CBaseCombatWeapon *pWeapon, bool bBlinkMoney );
 
@@ -1070,7 +1070,7 @@ private:
 	bool			m_bUsingDefaultPistol;
 
 	bool			m_bIsBeingGivenItem;
-	
+
 	// This is a combination of the ADDON_ flags in cs_shareddefs.h.
 	CNetworkVar( int, m_iAddonBits );
 
@@ -1131,7 +1131,7 @@ private:
 // HPE_BEGIN:
 // [menglish, tj] Achievement-based addition to CS player class.
 //=============================================================================
- 
+
 public:
 	void ResetRoundBasedAchievementVariables();
 	void OnRoundEnd(int winningTeam, int reason);
@@ -1147,13 +1147,13 @@ public:
     int GetPercentageOfEnemyTeamKilled();
 
 	//List of times of recent kills to check for sprees
-	CUtlVector<float>			m_killTimes; 
+	CUtlVector<float>			m_killTimes;
 
     //List of all players killed this round
     CUtlVector<CHandle<CCSPlayer> >      m_enemyPlayersKilledThisRound;
 
 	//List of weapons we have used to kill players with this round
-	CUtlVector<int>				m_killWeapons; 
+	CUtlVector<int>				m_killWeapons;
 
 	CNetworkVar( int, m_NumEnemiesKilledThisSpawn );
 	int m_maxNumEnemiesKillStreak;
@@ -1164,7 +1164,7 @@ public:
 	float m_firstKillBlindStartTime; //This is the start time of the blind effect during which we got our most recent kill.
 	int m_killsWhileBlind;
 	int m_bombCarrierkills;
- 
+
     bool m_bIsRescuing;         // tracks whether this player is currently rescuing a hostage
     bool m_bInjuredAHostage;    // tracks whether this player injured a hostage
     int  m_iNumFollowers;       // Number of hostages following this player
@@ -1233,15 +1233,15 @@ public:
 
 	int							m_grenadeDamageTakenThisRound;
 
-	bool						GetKilledDefuser() { return m_bKilledDefuser; } 
-	bool						GetKilledRescuer() { return m_bKilledRescuer; } 
+	bool						GetKilledDefuser() { return m_bKilledDefuser; }
+	bool						GetKilledRescuer() { return m_bKilledRescuer; }
 	int							GetMaxGrenadeKills() { return m_maxGrenadeKills; }
 
 	void						CheckMaxGrenadeKills(int grenadeKills);
 
     CHandle<CCSPlayer>                  m_lastFlashBangAttacker;
 
-    void	SetPlayerDominated( CCSPlayer *pPlayer, bool bDominated );    
+    void	SetPlayerDominated( CCSPlayer *pPlayer, bool bDominated );
     void	SetPlayerDominatingMe( CCSPlayer *pPlayer, bool bDominated );
     bool	IsPlayerDominated( int iPlayerIndex );
     bool	IsPlayerDominatingMe( int iPlayerIndex );
@@ -1250,7 +1250,7 @@ public:
 
 	bool	WasNotKilledNaturally() { return m_wasNotKilledNaturally; }
 
-	// [menglish] MVP functions	 
+	// [menglish] MVP functions
 	void	SetNumMVPs( int iNumMVP );
 	void	IncrementNumMVPs( CSMvpReason_t mvpReason );
 	int		GetNumMVPs();
@@ -1258,7 +1258,7 @@ public:
 	int	GetContributionScore( void ) { return m_iContributionScore; }
 	void ClearContributionScore( void ) { m_iContributionScore = 0; }
 	void AddContributionScore( int iPoints );
-	 
+
     void    RemoveNemesisRelationships();
 	void	SetDeathFlags( int iDeathFlags ) { m_iDeathFlags = iDeathFlags; }
 	int		GetDeathFlags() { return m_iDeathFlags; }
@@ -1337,13 +1337,13 @@ public:
 
 
 private:
-	CNetworkVar( bool, m_bIsControllingBot );	// Are we controlling a bot? 
-	// Note that this can be TRUE even if GetControlledPlayer() returns NULL, 
-	// IFF we started controlling a bot and then the bot was deleted for some reason. 
+	CNetworkVar( bool, m_bIsControllingBot );	// Are we controlling a bot?
+	// Note that this can be TRUE even if GetControlledPlayer() returns NULL,
+	// IFF we started controlling a bot and then the bot was deleted for some reason.
 
-	CNetworkVar( bool, m_bCanControlObservedBot );	// set to true if we can take control of the bot we are observing, for client UI feedback. 
+	CNetworkVar( bool, m_bCanControlObservedBot );	// set to true if we can take control of the bot we are observing, for client UI feedback.
 
-	CNetworkVar( int, m_iControlledBotEntIndex);	// Are we controlling a bot? 
+	CNetworkVar( int, m_iControlledBotEntIndex);	// Are we controlling a bot?
 
 	CHandle<CCSPlayer> m_hControlledBot;		// The is the OTHER player that THIS player is controlling
 	CHandle<CCSPlayer> m_hControlledByPlayer;	// This is the OTHER player that is controlling THIS player
@@ -1397,7 +1397,7 @@ inline bool CCSPlayer::IsReloading( void ) const
 }
 
 inline bool CCSPlayer::IsBlind( void ) const
-{ 
+{
 	return gpGlobals->curtime < m_blindUntilTime;
 }
 
@@ -1413,19 +1413,19 @@ inline bool CCSPlayer::IsBlindForAchievement()
 // HPE_END
 //=============================================================================
 
-inline bool CCSPlayer::IsAutoFollowAllowed( void ) const		
-{ 
-	return (gpGlobals->curtime > m_allowAutoFollowTime); 
+inline bool CCSPlayer::IsAutoFollowAllowed( void ) const
+{
+	return (gpGlobals->curtime > m_allowAutoFollowTime);
 }
 
-inline void CCSPlayer::InhibitAutoFollow( float duration )	
-{ 
-	m_allowAutoFollowTime = gpGlobals->curtime + duration; 
+inline void CCSPlayer::InhibitAutoFollow( float duration )
+{
+	m_allowAutoFollowTime = gpGlobals->curtime + duration;
 }
 
-inline void CCSPlayer::AllowAutoFollow( void )	
-{ 
-	m_allowAutoFollowTime = 0.0f; 
+inline void CCSPlayer::AllowAutoFollow( void )
+{
+	m_allowAutoFollowTime = 0.0f;
 }
 
 inline int CCSPlayer::GetClass( void ) const

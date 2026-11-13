@@ -36,7 +36,7 @@ extern ConVar cl_disablefreezecam;
 class CBoneSnapshot
 {
 public:
-	void			Update( CBaseAnimating* pEnt, bool bReadOnly = false );	
+	void			Update( CBaseAnimating* pEnt, bool bReadOnly = false );
 	inline void		UpdateReadOnly( void ) { Update( m_pEnt, true ); }
 
 	void			SetShouldCapture( void )					{ m_bCapturePending = true; }
@@ -55,9 +55,9 @@ public:
 	void			Disable( void )				{ if ( m_bEnabled ) { AbandonAnyPending(); } m_bEnabled = false; }
 
 	float			GetCurrentWeight( void )	{ return m_flWeight; }
-	
+
 	void			SetLastBoneSetupTimeIndex( void ) { m_flLastBoneSetupTimeIndex = gpGlobals->curtime; }
-	
+
 	void Init( void )
 	{
 		m_pEnt = NULL;
@@ -307,7 +307,7 @@ public:
 
 	virtual void CalcFreezeCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 	virtual void CalcDeathCamView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
-    
+
     void UpdateFreezeCamFlashlightEffect( C_BaseEntity *pTarget, float flAmount );
 	void CancelFreezeCamFlashlightEffect();
 	bool m_bFreezeCamFlashlightActive;
@@ -399,6 +399,7 @@ public:
 
 	// Returns the player mask which includes the solid mask plus the team mask.
 	virtual unsigned int PhysicsSolidMaskForEntity( void ) const;
+	virtual bool ShouldCollide( int collisionGroup, int contentsMask ) const override;
 
 	void OnJump( float fImpulse );
 	void OnLand( float fVelocity );
@@ -406,7 +407,7 @@ public:
 	bool HasC4() const;	// Is this player carrying a C4 bomb?
 
 	virtual void SetAnimation( PLAYER_ANIM playerAnim );
-	
+
 
 public:
 
@@ -472,7 +473,7 @@ public:
 	virtual void NotifyOnLayerChangeCycle( const CAnimationLayer* pLayer, const float flNewCycle ) OVERRIDE;
 
 	bool IsInHostageRescueZone( void );
-    
+
     int GetAddonPaintKit( int addonIndex ) const;
 
 	// This is a combination of the ADDON_ flags in cs_shareddefs.h.
@@ -661,13 +662,13 @@ public:
 
 	float m_flThirdpersonRecoil;
 
-	// taser items	
+	// taser items
 	float m_nextTaserShakeTime;
 	float m_firstTaserShakeTime;
 
 	C_CSPlayer( const C_CSPlayer & );
 
-	// For interpolating between observer targets 
+	// For interpolating between observer targets
 protected:
 	void						UpdateObserverTargetVisibility( void ) const;
 	Vector						m_vecObserverInterpolateOffset;			// Offset vec applied to the view which decays over time
@@ -701,8 +702,8 @@ public:
 	int GetControlledBotIndex()						const { return m_iControlledBotEntIndex; }
 
 private:
-	bool		m_bIsControllingBot;	// Are we controlling a bot? 
-	// Note that this can be TRUE even if GetControlledPlayer() returns NULL, IFF we started controlling a bot and then the bot was deleted for some reason. 
+	bool		m_bIsControllingBot;	// Are we controlling a bot?
+	// Note that this can be TRUE even if GetControlledPlayer() returns NULL, IFF we started controlling a bot and then the bot was deleted for some reason.
 	bool		m_bCanControlObservedBot;	// True if the player can control the bot s/he is observing
 	int			m_iControlledBotEntIndex;
 

@@ -1,6 +1,6 @@
 //========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================//
@@ -97,7 +97,7 @@ public:
 protected:
 	virtual void PlayerMove();
 
-	virtual unsigned int PlayerSolidMask( bool brushOnly = false, CBasePlayer *testPlayer = NULL ) const;	///< returns the solid mask for the given player, so bots can have a more-restrictive set
+	virtual unsigned int PlayerSolidMask( bool brushOnly = false ) override;	///< returns the solid mask for the given player, so bots can have a more-restrictive set
 
 public:
 	CCSPlayer *m_pCSPlayer;
@@ -127,14 +127,14 @@ CCSGameMovement::CCSGameMovement()
 //-----------------------------------------------------------------------------
 // Purpose: Allow bots etc to use slightly different solid masks
 //-----------------------------------------------------------------------------
-unsigned int CCSGameMovement::PlayerSolidMask( bool brushOnly, CBasePlayer *testPlayer ) const
+unsigned int CCSGameMovement::PlayerSolidMask( bool brushOnly )
 {
 	bool isBot = !player || player->IsBot();
 	unsigned int uMask = MASK_PLAYERSOLID_BRUSHONLY;
 
 	if ( !brushOnly )
 	{
-		uMask = player->PhysicsSolidMaskForEntity();
+		uMask = player ? player->PhysicsSolidMaskForEntity() : MASK_PLAYERSOLID;
 	}
 
 	if ( isBot )
@@ -164,7 +164,7 @@ bool CCSGameMovement::DuckingEnabled()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CCSGameMovement::CheckParameters( void )
 {
@@ -310,9 +310,9 @@ void CCSGameMovement::CheckParameters( void )
 			}
 		}
 	}
-	
+
 	if ( player->GetFlags() & FL_FROZEN ||
-		 player->GetFlags() & FL_ONTRAIN || 
+		 player->GetFlags() & FL_ONTRAIN ||
 		 IsDead() )
 	{
 		if ( player->GetObserverMode() != OBS_MODE_ROAMING )
@@ -351,7 +351,7 @@ void CCSGameMovement::CheckParameters( void )
 	}
 
 	// Set dead player view_offset
-	if ( IsDead() && 
+	if ( IsDead() &&
 		 player->GetObserverMode() == OBS_MODE_DEATHCAM )
 	{
 		player->SetViewOffset( VEC_DEAD_VIEWHEIGHT );
@@ -421,7 +421,7 @@ void CCSGameMovement::CheckParameters( void )
 void CCSGameMovement::ProcessMovement( CBasePlayer *pBasePlayer, CMoveData *pMove )
 {
 	m_pCSPlayer = static_cast<CCSPlayer *>( pBasePlayer );
-	
+
 	if ( m_pCSPlayer->IsBot() && m_pCSPlayer->IsDormant() )
 		return;
 
@@ -442,7 +442,7 @@ bool CCSGameMovement::CanAccelerate()
 		return true;
 	}
 	else
-	{	
+	{
 		return false;
 	}
 }
@@ -470,7 +470,7 @@ void CCSGameMovement::PlayerMove()
 	}
 
 #if !defined(CLIENT_DLL)
-	if( player && 
+	if( player &&
 		player->GetTeamNumber() == TEAM_SPECTATOR &&
 		player->GetObserverMode() == OBS_MODE_FIXED )
 	{
@@ -504,7 +504,7 @@ void CCSGameMovement::PlayerMove()
 	if ( !m_pCSPlayer->m_bHasMovedSinceSpawn && Vector2DLength( mv->m_vecVelocity.AsVector2D() ) != 0  )
 		m_pCSPlayer->m_bHasMovedSinceSpawn = true;
 
-#endif	
+#endif
 
 }
 
@@ -622,7 +622,7 @@ void CCSGameMovement::PreventBunnyJumping()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 bool CCSGameMovement::CheckJumpButton( void )
 {
@@ -638,13 +638,13 @@ bool CCSGameMovement::CheckJumpButton( void )
 		m_pCSPlayer->m_flWaterJumpTime -= gpGlobals->frametime;
 		if (m_pCSPlayer->m_flWaterJumpTime < 0)
 			m_pCSPlayer->m_flWaterJumpTime = 0;
-		
+
 		return false;
 	}
 
 	// If we are in the water most of the way...
 	if ( m_pCSPlayer->GetWaterLevel() >= WL_Waist )
-	{	
+	{
 		// swimming, not jumping
 		SetGroundEntity( NULL );
 
@@ -652,7 +652,7 @@ bool CCSGameMovement::CheckJumpButton( void )
 			mv->m_vecVelocity[2] = 100;
 		else if (m_pCSPlayer->GetWaterType() == CONTENTS_SLIME)
 			mv->m_vecVelocity[2] = 80;
-		
+
 		// play swiming sound
 		if ( m_pCSPlayer->m_flSwimSoundTime <= 0 )
 		{
@@ -714,7 +714,7 @@ bool CCSGameMovement::CheckJumpButton( void )
 	float flGroundFactor = 1.0f;
 	if (player->m_pSurfaceData)
 	{
-		flGroundFactor = player->m_pSurfaceData->game.jumpFactor; 
+		flGroundFactor = player->m_pSurfaceData->game.jumpFactor;
 	}
 
 	// if we weren't ducking, bots and hostages do a crouchjump programatically
@@ -739,7 +739,7 @@ bool CCSGameMovement::CheckJumpButton( void )
 		// v = g * sqrt(2.0 * 45 / g )
 		// v^2 = g * g * 2.0 * 45 / g
 		// v = sqrt( g * 2.0 * 45 )
-		
+
 		mv->m_vecVelocity[2] = flGroundFactor * sv_jump_impulse.GetFloat();  // 2 * gravity * height
 	}
 	else
@@ -844,7 +844,7 @@ bool CCSGameMovement::CanUnduck()
 	// Can always unduck if we are no-clipping
 	if ( player->GetMoveType() == MOVETYPE_NOCLIP )
 		return true;
-	
+
 	// Check to see if we would collide on anything if we unducked.
 	trace_t trace;
 	Vector newOrigin;
@@ -861,14 +861,14 @@ bool CCSGameMovement::CanUnduck()
 		//  up for uncrouching
  		Vector hullSizeNormal = VEC_HULL_MAX - VEC_HULL_MIN;
 		Vector hullSizeCrouch = VEC_DUCK_HULL_MAX - VEC_DUCK_HULL_MIN;
-		
+
 		newOrigin += -0.5f * ( hullSizeNormal - hullSizeCrouch );
 	}
 
 	UTIL_TraceHull( mv->GetAbsOrigin(), newOrigin, VEC_HULL_MIN, VEC_HULL_MAX, PlayerSolidMask(), player, COLLISION_GROUP_PLAYER_MOVEMENT, &trace );
 
 	if ( trace.startsolid || ( trace.fraction != 1.0f ) )
-		return false;	
+		return false;
 
 	return true;
 }
@@ -1207,7 +1207,7 @@ void CCSGameMovement::OnJump( float fImpulse )
 	m_pCSPlayer->m_flStamina = clamp( m_pCSPlayer->m_flStamina + flStamCost * fImpulse, 0.0f, sv_staminamax.GetFloat( ) );
 
 	m_pCSPlayer->OnJump( fImpulse );
-}	
+}
 
 void CCSGameMovement::OnLand( float fVelocity )
 {
@@ -1249,17 +1249,17 @@ void CCSGameMovement::Accelerate( Vector& wishdir, float wishspeed, float accel 
 
 	CWeaponCSBase *csWeapon = dynamic_cast< CWeaponCSBase * >( player->GetActiveWeapon() );
 /*		flMaxScaleSpeed = mv->m_flMaxSpeed;*/
-	
+
 	bool bIsSlowSniperScoped = false;
 
 	flGoalSpeed = fAccelerationScale;
 	if ( sv_accelerate_use_weapon_speed.GetBool( ) && csWeapon )
 	{
-		bIsSlowSniperScoped = (csWeapon->GetCSZoomLevel() > 0 && csWeapon->GetCSWpnData().m_iZoomLevels > 1 
+		bIsSlowSniperScoped = (csWeapon->GetCSZoomLevel() > 0 && csWeapon->GetCSWpnData().m_iZoomLevels > 1
 								&& (csWeapon->GetMaxSpeed( ) * CS_PLAYER_SPEED_WALK_MODIFIER) < 110.0);
 
 		flGoalSpeed *= MIN( 1.0f, ( csWeapon->GetMaxSpeed( ) / flMaxSpeed ) );
-		
+
 		if ( (!bIsDucking && !bIsWalking) || (( bIsWalking || bIsDucking) && bIsSlowSniperScoped) )
 			fAccelerationScale *= MIN( 1.0f, (csWeapon->GetMaxSpeed() / flMaxSpeed));
 	}
@@ -1290,11 +1290,11 @@ void CCSGameMovement::Accelerate( Vector& wishdir, float wishspeed, float accel 
 	// we no longer just clamp player's max speed when they hit the walk key
 	else if (bIsWalking && currentspeed > (flGoalSpeed-5) )*/
 	if (bIsWalking && currentspeed > (flGoalSpeed-5) )
-	{	
+	{
 		// we now only clamp it when it's within a certain range of walking, otherwise we stop adding speed to let them decelerate naturally
 		flStoredAccel *= clamp( 1.0f - ( MAX( 0.0f, currentspeed - ( flGoalSpeed - 5 ) ) / MAX( 0.0f, flGoalSpeed - ( flGoalSpeed - 5 ) ) ), 0.0f, 1.0f );
 	}
-	
+
 	// Determine amount of acceleration.
 	float accelspeed = 0;
 
@@ -1302,7 +1302,7 @@ void CCSGameMovement::Accelerate( Vector& wishdir, float wishspeed, float accel 
 	float flMaxAccelspeed = 0;
 
 	if ( flZeroToMaxSpeedTime > 0 )
-	{	
+	{
 		currentspeed = MAX( 5, currentspeed );
 
 		float flRawAccelExponent = MAX(1, SV_ACCELERATE_EXPONENT);
