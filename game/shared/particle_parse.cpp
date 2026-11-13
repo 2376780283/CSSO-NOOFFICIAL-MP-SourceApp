@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================
 
@@ -24,7 +24,7 @@
 #define PARTICLES_MANIFEST_FILE				"particles/particles_manifest.txt"
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 int GetAttachTypeFromString( const char *pszString )
 {
@@ -39,7 +39,11 @@ int GetAttachTypeFromString( const char *pszString )
 		"start_at_customorigin",// PATTACH_CUSTOMORIGIN,
 		"start_at_attachment",	// PATTACH_POINT,
 		"follow_attachment",	// PATTACH_POINT_FOLLOW,
+		"world_origin",			// PATTACH_WORLDORIGIN
 		"follow_rootbone",		// PATTACH_ROOTBONE_FOLLOW
+		"follow_customorigin",
+		"follow_eyes",
+		"follow_overhead",
 	};
 
 	for ( int i = 0; i < MAX_PATTACH_TYPES; i++ )
@@ -52,37 +56,13 @@ int GetAttachTypeFromString( const char *pszString )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : list - 
+// Purpose:
+// Input  : list -
 //-----------------------------------------------------------------------------
-void GetParticleManifest( CUtlVector<CUtlString>& list )
-{
-	// Open the manifest file, and read the particles specified inside it
-	KeyValues *manifest = new KeyValues( PARTICLES_MANIFEST_FILE );
-	if ( manifest->LoadFromFile( filesystem, PARTICLES_MANIFEST_FILE, "GAME" ) )
-	{
-		for ( KeyValues *sub = manifest->GetFirstSubKey(); sub != NULL; sub = sub->GetNextKey() )
-		{
-			if ( !Q_stricmp( sub->GetName(), "file" ) )
-			{
-				list.AddToTail( sub->GetString() );
-				continue;
-			}
-
-			Warning( "CParticleMgr::Init:  Manifest '%s' with bogus file type '%s', expecting 'file'\n", PARTICLES_MANIFEST_FILE, sub->GetName() );
-		}
-	}
-	else
-	{
-		Warning( "PARTICLE SYSTEM: Unable to load manifest file '%s'\n", PARTICLES_MANIFEST_FILE );
-	}
-
-	manifest->deleteThis();
-}
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void ParseParticleEffects( bool bLoadSheets, bool bPrecache )
 {
@@ -92,6 +72,26 @@ void ParseParticleEffects( bool bLoadSheets, bool bPrecache )
 
 	CUtlVector<CUtlString> files;
 	GetParticleManifest( files );
+
+	// These shipped effects are required by grenades even with an older game manifest.
+	static const char *requiredFiles[] = { "particles/explosions_fx.pcf", "particles/inferno_fx.pcf" };
+	for ( int i = 0; i < ARRAYSIZE( requiredFiles ); ++i )
+	{
+		bool found = false;
+		for ( int j = 0; j < files.Count(); ++j )
+		{
+			const char *name = files[j];
+			if ( name[0] == '!' )
+				++name;
+			if ( !Q_stricmp( name, requiredFiles[i] ) )
+			{
+				found = true;
+				break;
+			}
+		}
+		if ( !found )
+			files.AddToTail( requiredFiles[i] );
+	}
 
 	int nCount = files.Count();
 	for ( int i = 0; i < nCount; ++i )
@@ -103,7 +103,7 @@ void ParseParticleEffects( bool bLoadSheets, bool bPrecache )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void ReloadParticleEffectsInList( IFileList *pFilesToReload )
 {
@@ -142,7 +142,7 @@ void ReloadParticleEffectsInList( IFileList *pFilesToReload )
 	// Then check to see if we need to reload the map's particles
 	const char *pszMapName = NULL;
 #ifdef CLIENT_DLL
-	pszMapName = engine->GetLevelName();	
+	pszMapName = engine->GetLevelName();
 #else
 	pszMapName = STRING( gpGlobals->mapname );
 #endif
@@ -158,7 +158,7 @@ void ReloadParticleEffectsInList( IFileList *pFilesToReload )
 	{
 		ParseParticleEffects( true, true );
 	}
-	
+
 	g_pParticleSystemMgr->DecommitTempMemory();
 }
 
@@ -236,12 +236,12 @@ void ParseParticleEffectsMap( const char *pMapName, bool bLoadSheets, IFileList 
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void PrecacheStandardParticleSystems( )
 {
 #ifdef GAME_DLL
-	// Now add each particle system name to the network string pool, so we can send string_t's 
+	// Now add each particle system name to the network string pool, so we can send string_t's
 	// down to the client instead of full particle system names.
 	for ( int i = 0; i < g_pParticleSystemMgr->GetParticleSystemCount(); i++ )
 	{
@@ -258,7 +258,7 @@ void PrecacheStandardParticleSystems( )
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchParticleEffect( const char *pszParticleName, ParticleAttachment_t iAttachType, CBaseEntity *pEntity, const char *pszAttachmentName, bool bResetAllParticlesOnEntity )
 {
@@ -280,7 +280,7 @@ void DispatchParticleEffect( const char *pszParticleName, ParticleAttachment_t i
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchParticleEffect( const char *pszParticleName, ParticleAttachment_t iAttachType, CBaseEntity *pEntity, int iAttachmentPoint, bool bResetAllParticlesOnEntity )
 {
@@ -321,7 +321,7 @@ void DispatchParticleEffect( const char *pszParticleName, ParticleAttachment_t i
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchParticleEffect( const char *pszParticleName, ParticleAttachment_t iAttachType, CBaseEntity *pEntity, const char *pszAttachmentName, Vector vecColor1, Vector vecColor2, bool bUseColors, bool bResetAllParticlesOnEntity )
 {
@@ -381,7 +381,7 @@ void DispatchParticleEffect( const char *pszParticleName, ParticleAttachment_t i
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchParticleEffect( int iEffectIndex, Vector vecOrigin, Vector vecStart, QAngle vecAngles, CBaseEntity *pEntity )
 {
@@ -416,7 +416,7 @@ void DispatchParticleEffect( int iEffectIndex, Vector vecOrigin, Vector vecStart
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchParticleEffect( const char *pszParticleName, Vector vecOrigin, QAngle vecAngles, Vector vecColor1, Vector vecColor2, bool bUseColors, CBaseEntity *pEntity, int iAttachType )
 {
@@ -459,7 +459,7 @@ void DispatchParticleEffect( const char *pszParticleName, Vector vecOrigin, QAng
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchParticleEffect( const char *pszParticleName, Vector vecOrigin, QAngle vecAngles, CBaseEntity *pEntity )
 {
@@ -477,7 +477,7 @@ void DispatchParticleEffect( const char *pszParticleName, Vector vecOrigin, Vect
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void StopParticleEffects( CBaseEntity *pEntity )
 {
@@ -528,11 +528,11 @@ void StopParticleEffects( CBaseEntity *pEntity )
 		CBaseEntity *pEntity = NULL;
 		while ( (pEntity = GetNextCommandEntity( pPlayer, name, pEntity )) != NULL )
 		{
-			/* 
+			/*
 			Fire the test particle system on this entity
 			*/
 
-			DispatchParticleEffect( 
+			DispatchParticleEffect(
 				pszParticleFile,
 				(ParticleAttachment_t)iAttachType,
 				pEntity,

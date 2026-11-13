@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================//
@@ -12,6 +12,8 @@
 #endif
 
 #include "baseprojectile.h"
+
+struct surfacedata_t;
 
 #if defined( CLIENT_DLL )
 
@@ -73,6 +75,8 @@ public:
 	virtual float		GetShakeAmplitude( void ) { return 25.0; }
 	virtual float		GetShakeRadius( void ) { return 750.0; }
 
+	virtual const char *GetParticleSystemName( int pointContents, surfacedata_t *pdata = NULL ) { return NULL; }
+
 	// Damage accessors.
 	virtual float GetDamage()
 	{
@@ -94,7 +98,7 @@ public:
 	}
 
 	// Bounce sound accessors.
-	void SetBounceSound( const char *pszBounceSound ) 
+	void SetBounceSound( const char *pszBounceSound )
 	{
 		m_iszBounceSound = MAKE_STRING( pszBounceSound );
 	}
@@ -105,8 +109,8 @@ public:
 
 #if !defined( CLIENT_DLL )
 	// Allow +USE pickup
-	int ObjectCaps() 
-	{ 
+	int ObjectCaps()
+	{
 		return (BaseClass::ObjectCaps() | FCAP_IMPULSE_USE | FCAP_USE_IN_RADIUS);
 	}
 
@@ -116,7 +120,7 @@ public:
 public:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_vecVelocity );
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_fFlags );
-	
+
 	bool				m_bHasWarnedAI;				// whether or not this grenade has issued its DANGER sound to the world sound list yet.
 	CNetworkVar( bool, m_bIsLive );					// Is this grenade live, or can it be picked up?
 	CNetworkVar( float, m_DmgRadius );				// How far do I do damage?

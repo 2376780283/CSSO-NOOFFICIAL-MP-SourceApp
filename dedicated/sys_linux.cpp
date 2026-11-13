@@ -37,6 +37,7 @@
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "datacache/idatacache.h"
 #include "datacache/imdlcache.h"
+#include "datacache/iprecachesystem.h"
 #include "vphysics_interface.h"
 #include "icvar.h"
 #include "filesystem/IQueuedLoader.h"
@@ -81,7 +82,7 @@ static CSys g_Sys;
 ISys *sys = &g_Sys;
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 CSys::~CSys()
 {
@@ -91,7 +92,7 @@ CSys::~CSys()
 //-----------------------------------------------------------------------------
 // Purpose:
 // Input  : msec
-// Output : 
+// Output :
 //-----------------------------------------------------------------------------
 void CSys::Sleep( int msec )
 {
@@ -258,7 +259,7 @@ GameInit
 */
 bool CSys::LoadModules( CDedicatedAppSystemGroup *pAppSystemGroup )
 {
-	AppSystemInfo_t appSystems[] = 
+	AppSystemInfo_t appSystems[] =
 	{
  		{ "engine" DLL_EXT_STRING,				CVAR_QUERY_INTERFACE_VERSION },
 		{ "soundemittersystem" DLL_EXT_STRING,	SOUNDEMITTERSYSTEM_INTERFACE_VERSION }, // loaded for backwards compatability, prevents crash on exit for old game dlls
@@ -267,20 +268,21 @@ bool CSys::LoadModules( CDedicatedAppSystemGroup *pAppSystemGroup )
 		{ "vphysics" DLL_EXT_STRING,			VPHYSICS_INTERFACE_VERSION },
 		{ "datacache" DLL_EXT_STRING,			DATACACHE_INTERFACE_VERSION },
 		{ "datacache" DLL_EXT_STRING,			MDLCACHE_INTERFACE_VERSION },
+		{ "datacache" DLL_EXT_STRING,			PRECACHE_SYSTEM_INTERFACE_VERSION },
 		{ "datacache" DLL_EXT_STRING,			STUDIO_DATA_CACHE_INTERFACE_VERSION },
 		{ "dedicated" DLL_EXT_STRING,			QUEUEDLOADER_INTERFACE_VERSION },
 		{ "engine" DLL_EXT_STRING,				VENGINE_HLDS_API_VERSION },
 		{ "", "" }	// Required to terminate the list
 	};
 
-	if ( !pAppSystemGroup->AddSystems( appSystems ) ) 
+	if ( !pAppSystemGroup->AddSystems( appSystems ) )
 		return false;
 
 	engine = (IDedicatedServerAPI *)pAppSystemGroup->FindSystem( VENGINE_HLDS_API_VERSION );
 	// obsolete i think SetCVarIF( (ICvar*)pAppSystemGroup->FindSystem( VENGINE_CVAR_INTERFACE_VERSION ) );
 
 	IMaterialSystem* pMaterialSystem = (IMaterialSystem*)pAppSystemGroup->FindSystem( MATERIAL_SYSTEM_INTERFACE_VERSION );
-	pMaterialSystem->SetShaderAPI( "shaderapiempty" DLL_EXT_STRING );	
+	pMaterialSystem->SetShaderAPI( "shaderapiempty" DLL_EXT_STRING );
 	return true;
 }
 

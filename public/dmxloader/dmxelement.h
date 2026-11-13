@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================
 
@@ -21,7 +21,7 @@
 
 
 //-----------------------------------------------------------------------------
-// Sort functor class for attributes 
+// Sort functor class for attributes
 //-----------------------------------------------------------------------------
 class CDmxAttributeLess
 {
@@ -45,7 +45,21 @@ struct DmxElementUnpackStructure_t
 	int m_nOffset;
 	int m_nSize;
 	const void *m_pUserData;	// If you want to associate some app-specific data with each field
+	int m_nArrayLength;
 };
+
+#define UTL_STRING_SIZE -1
+#define NO_USER_DATA NULL
+#define NOT_AN_ARRAY 0
+
+#define DMXELEMENT_UNPACK_FIELD_ARRAY( _attributeName, _defaultString, _type, _varName ) \
+	{ _attributeName, _defaultString, CDmAttributeInfo< CUtlVector< _type > >::AttributeType(), (int)offsetof( DestStructType_t, _varName ), sizeof( ((DestStructType_t *)0)->_varName[0] ), NULL, ARRAYSIZE( ((DestStructType_t *)0)->_varName ) },
+
+#define DMXELEMENT_UNPACK_FIELD_UTLSTRING( _attributeName, _defaultString, _varName ) \
+	{ _attributeName, _defaultString, AT_STRING, (int)offsetof( DestStructType_t, _varName ), UTL_STRING_SIZE, NULL, 0 },
+
+#define DMXELEMENT_UNPACK_FIELD_UTLSTRING_USERDATA( _attributeName, _defaultString, _varName, _userData ) \
+	{ _attributeName, _defaultString, AT_STRING, (int)offsetof( DestStructType_t, _varName ), UTL_STRING_SIZE, _userData, 0 },
 
 #define DECLARE_DMXELEMENT_UNPACK() \
 	template <typename T> friend DmxElementUnpackStructure_t *DmxElementUnpackInit(T *);
@@ -203,7 +217,7 @@ inline const char *CDmxElement::GetValueString( const char *pAttributeName ) con
 	return "";
 }
 
-template< class T > 
+template< class T >
 inline const T& CDmxElement::GetValue( const char *pAttributeName ) const
 {
 	const CDmxAttribute* pAttribute = GetAttribute( pAttributeName );
@@ -224,7 +238,7 @@ inline const T& CDmxElement::GetValue( const char *pAttributeName, const T& defa
 	return defaultValue;
 }
 
-template< class T > 
+template< class T >
 inline const CUtlVector<T>& CDmxElement::GetArray( const char *pAttributeName ) const
 {
 	const CDmxAttribute* pAttribute = GetAttribute( pAttributeName );
@@ -235,7 +249,7 @@ inline const CUtlVector<T>& CDmxElement::GetArray( const char *pAttributeName ) 
 	return defaultValue;
 }
 
-template< class T > 
+template< class T >
 inline const CUtlVector<T>& CDmxElement::GetArray( const char *pAttributeName, const CUtlVector<T>& defaultValue ) const
 {
 	const CDmxAttribute* pAttribute = GetAttribute( pAttributeName );
@@ -297,7 +311,7 @@ inline CDmxAttribute* CDmxElement::SetValue( const char *pAttributeName, void *p
 	return pAttribute;
 }
 
-template< class T > 
+template< class T >
 inline CDmxAttribute* CDmxElement::SetValue( const char *pAttributeName, const T& value )
 {
 	CDmxElementModifyScope modify( this );

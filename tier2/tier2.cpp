@@ -17,6 +17,7 @@
 #include "p4lib/ip4.h"
 #include "mdllib/mdllib.h"
 #include "filesystem/IQueuedLoader.h"
+#include "datacache/iprecachesystem.h"
 
 
 //-----------------------------------------------------------------------------
@@ -37,6 +38,8 @@ IColorCorrectionSystem *colorcorrection = 0;
 IP4 *p4 = 0;
 IMdlLib *mdllib = 0;
 IQueuedLoader *g_pQueuedLoader = 0;
+IPrecacheSystem *g_pPrecacheSystem = 0;
+static bool s_bPrecachesRegistered;
 
 
 //-----------------------------------------------------------------------------
@@ -46,9 +49,9 @@ IQueuedLoader *g_pQueuedLoader = 0;
 void ConnectTier2Libraries( CreateInterfaceFn *pFactoryList, int nFactoryCount )
 {
 	// Don't connect twice..
-	Assert( !g_pFullFileSystem && !materials && !g_pInputSystem && !g_pNetworkSystem && 
+	Assert( !g_pFullFileSystem && !materials && !g_pInputSystem && !g_pNetworkSystem &&
 		!p4 && !mdllib && !g_pMaterialSystemDebugTextureInfo && !g_VBAllocTracker &&
-		!g_pMaterialSystemHardwareConfig && !g_pQueuedLoader );
+		!g_pMaterialSystemHardwareConfig && !g_pQueuedLoader && !g_pPrecacheSystem );
 
 	for ( int i = 0; i < nFactoryCount; ++i )
 	{
@@ -96,6 +99,17 @@ void ConnectTier2Libraries( CreateInterfaceFn *pFactoryList, int nFactoryCount )
 		{
 			g_pQueuedLoader = (IQueuedLoader *)pFactoryList[i]( QUEUEDLOADER_INTERFACE_VERSION, NULL );
 		}
+		if ( !g_pPrecacheSystem )
+		{
+			g_pPrecacheSystem = (IPrecacheSystem *)pFactoryList[i]( PRECACHE_SYSTEM_INTERFACE_VERSION, NULL );
+		}
+	}
+
+	if ( g_pPrecacheSystem && !s_bPrecachesRegistered )
+	{
+		// Make all the PRECACHE_ macros register w/precache system now that it's connected
+		CBaseResourcePrecacher::RegisterAll();
+		s_bPrecachesRegistered = true;
 	}
 }
 
@@ -112,6 +126,7 @@ void DisconnectTier2Libraries()
 	p4 = 0;
 	mdllib = 0;
 	g_pQueuedLoader = 0;
+	g_pPrecacheSystem = 0;
 }
 
 

@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================//
 
@@ -26,7 +26,9 @@ class C_SmokeGrenadeProjectile : public C_BaseCSGrenadeProjectile
 
 	virtual void PostDataUpdate( DataUpdateType_t updateType ) OVERRIDE;
 	virtual void OnDataChanged( DataUpdateType_t updateType ) OVERRIDE;
+	void SpawnSmokeEffect();
 
+	CNetworkVar( int, m_nSmokeEffectTickBegin );
 	CNetworkVar( bool, m_bDidSmokeEffect );
 
 	bool m_bSmokeEffectSpawned;
@@ -42,7 +44,7 @@ public:
 
 // Overrides.
 public:
-	
+
 	virtual void Spawn();
 	virtual void Precache();
 	virtual void Detonate();
@@ -61,16 +63,17 @@ public:
 // Grenade stuff.
 public:
 
-	static CSmokeGrenadeProjectile* Create( 
-		const Vector &position, 
-		const QAngle &angles, 
-		const Vector &velocity, 
-		const AngularImpulse &angVelocity, 
+	static CSmokeGrenadeProjectile* Create(
+		const Vector &position,
+		const QAngle &angles,
+		const Vector &velocity,
+		const AngularImpulse &angVelocity,
 		CBaseCombatCharacter *pOwner );
 
 	void SetTimer( float timer );
 
 	EHANDLE m_hSmokeEffect;
+	CNetworkVar( int, m_nSmokeEffectTickBegin );
 	CNetworkVar( bool, m_bDidSmokeEffect );
 	float m_flLastBounce;
 };

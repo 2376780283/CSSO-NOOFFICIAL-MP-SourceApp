@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================//
 
@@ -24,16 +24,17 @@ public:
 	virtual void Precache();
 	virtual void BounceSound( void );
 	virtual void Detonate();
+	virtual const char *GetParticleSystemName( int pointContents, surfacedata_t *pdata );
 
 // Grenade stuff.
 public:
 
-	static CHEGrenadeProjectile* Create( 
-		const Vector &position, 
-		const QAngle &angles, 
-		const Vector &velocity, 
-		const AngularImpulse &angVelocity, 
-		CBaseCombatCharacter *pOwner, 
+	static CHEGrenadeProjectile* Create(
+		const Vector &position,
+		const QAngle &angles,
+		const Vector &velocity,
+		const AngularImpulse &angVelocity,
+		CBaseCombatCharacter *pOwner,
 		float timer );
 
 	void SetTimer( float timer );

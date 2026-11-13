@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================
 
@@ -20,7 +20,7 @@
 
 
 //-----------------------------------------------------------------------------
-// Forward declarations: 
+// Forward declarations:
 //-----------------------------------------------------------------------------
 class CDmxElement;
 
@@ -33,7 +33,7 @@ DECLARE_ATTRIBUTE_ARRAY_TYPE( CDmxElement*,	AT_ELEMENT_ARRAY,		"element_array" )
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 class CDmxAttribute
 {
@@ -63,7 +63,7 @@ public:
 	void SetValue( const CDmxAttribute *pAttribute );
 
 	// Method to set values in an array (just directly operate on the array)
-	// NOTE: This will create a new array of the appropriate type if 
+	// NOTE: This will create a new array of the appropriate type if
 	// the type doesn't match the current type
 	template< class T > CUtlVector< T >& GetArrayForEdit();
 
@@ -86,6 +86,8 @@ public:
 
 	// Returns the size of the variables storing the various attribute types
 	static int AttributeDataSize( DmAttributeType_t type );
+	// Gets the basic type for a given array attribute type (e.g. AT_INT_ARRAY -> AT_INT)
+	static DmAttributeType_t ArrayAttributeBasicType( DmAttributeType_t type );
 
 private:
 	CDmxAttribute( const char *pAttributeName );
@@ -94,10 +96,29 @@ private:
 
 	// Allocate, free memory for data
 	void AllocateDataMemory( DmAttributeType_t type );
+	void AllocateDataMemory_AndConstruct( DmAttributeType_t type );
 	void FreeDataMemory( );
 
-	// Untyped method for setting used by unpack
+	// Untyped methods for getting/setting used by unpack
 	void SetValue( DmAttributeType_t type, const void *pSrc, int nLen );
+	// NOTE: [Get|Set]ArrayValue don't currently support AT_STRING_ARRAY, AT_STRING_VOID or AT_ELEMENT_ARRAY
+	void SetArrayValue( DmAttributeType_t type, const void *pSrc, int nDataTypeSize, int nArrayLength, int nSrcStride );
+	void GetArrayValue( DmAttributeType_t type, void *pDest, int nDataTypeSize, int nArrayLength, const char *pDefaultString = NULL ) const;
+	void SetArrayCount( int nArrayCount );
+	const void *GetArrayBase( void ) const;
+
+	// Helper templated methods called from untyped methods (VT is vector datatype, T is basic datatype, VT will be the same as T if the attribute is non-array)
+	template < class VT, class T > void ConstructDataMemory( void );
+	template < class VT, class T > void DestructDataMemory( void );
+	template < class VT, class T > void SetArrayCount( int nArrayCount );
+	template < class VT, class T > void GetArrayCount( int &nArrayCount ) const;
+	template < class VT, class T > void GetArrayBase( const void * &pBasePtr ) const;
+	template < class VT, class T > void SerializesOnMultipleLines( bool &bResult ) const;
+	template < class VT, class T > void SerializeType( bool &bSuccess, CUtlBuffer &buf ) const;
+	template < class VT, class T > void SerializeTypedElement( bool &bSuccess, int nIndex, CUtlBuffer &buf ) const;
+	template < class VT, class T > void UnserializeType( bool &bSuccess, CUtlBuffer &buf );
+	template < class VT, class T > void UnserializeTypedElement( bool &bSuccess, CUtlBuffer &buf );
+	template < class VT, class T > void SetDefaultValue( void );
 
 	DmAttributeType_t m_Type;
 	CUtlSymbol m_Name;
@@ -110,7 +131,7 @@ private:
 
 
 //-----------------------------------------------------------------------------
-// Inline methods 
+// Inline methods
 //-----------------------------------------------------------------------------
 inline DmAttributeType_t CDmxAttribute::GetType() const
 {
@@ -159,7 +180,7 @@ inline const T& CDmxAttribute::GetValue( ) const
 	return defaultValue;
 }
 
-template< class T > 
+template< class T >
 inline const CUtlVector< T >& CDmxAttribute::GetArray( ) const
 {
 	if ( CDmAttributeInfo< CUtlVector< T > >::AttributeType() == m_Type )
@@ -169,7 +190,7 @@ inline const CUtlVector< T >& CDmxAttribute::GetArray( ) const
 	return defaultArray;
 }
 
-template< class T > 
+template< class T >
 inline CUtlVector< T >& CDmxAttribute::GetArrayForEdit( )
 {
 	if ( CDmAttributeInfo< CUtlVector< T > >::AttributeType() == m_Type )

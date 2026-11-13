@@ -1,6 +1,6 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//========= Copyright � 1996-2005, Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $Workfile:     $
 // $Date:         $
@@ -36,8 +36,8 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *name - 
+// Purpose:
+// Input  : *name -
 //-----------------------------------------------------------------------------
 CTEEffectDispatch::CTEEffectDispatch( const char *name ) :
 	CBaseTempEntity( name )
@@ -45,16 +45,14 @@ CTEEffectDispatch::CTEEffectDispatch( const char *name ) :
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 CTEEffectDispatch::~CTEEffectDispatch( void )
 {
 }
 
 IMPLEMENT_SERVERCLASS_ST( CTEEffectDispatch, DT_TEEffectDispatch )
-
 	SendPropDataTable( SENDINFO_DT( m_EffectData ), &REFERENCE_SEND_TABLE( DT_EffectData ) )
-
 END_SEND_TABLE()
 
 
@@ -62,30 +60,56 @@ END_SEND_TABLE()
 static CTEEffectDispatch g_TEEffectDispatch( "EffectDispatch" );
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void TE_DispatchEffect( IRecipientFilter& filter, float delay, const Vector &pos, const char *pName, const CEffectData &data )
-{
-	// Copy the supplied effect data.
-	g_TEEffectDispatch.m_EffectData = data;
-
-	// Get the entry index in the string table.
-	g_TEEffectDispatch.m_EffectData.m_iEffectName = g_pStringTableEffectDispatch->AddString( CBaseEntity::IsServer(), pName );
-
-	// Send it to anyone who can see the effect's origin.
-	g_TEEffectDispatch.Create( filter, 0 );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void DispatchEffect( const char *pName, const CEffectData &data )
 {
-	CPASFilter filter( data.m_vOrigin );
-	DispatchEffect( pName, data, filter );
+	//Broadcast effects to all players. The potential for cheating
+	//seems minimal on the effects that are sent through this,
+	//and the overhead is minimal enough to make it worth sending to
+	//all players.
+	CReliableBroadcastRecipientFilter filter;
+	filter.AddAllPlayers();
+
+	if ( data.m_fFlags & EFFECTDATA_SERVER_IGNOREPREDICTIONCULL )
+	{
+		// remove prediction cull so it works on listen servers for the host
+		filter.SetIgnorePredictionCull( true );
+	}
+
+	if ( te->CanPredict() && filter.GetRecipientCount() > 0 )
+	{
+		// Copy the supplied effect data.
+		g_TEEffectDispatch.m_EffectData = data;
+
+		// Get the entry index in the string table.
+		g_TEEffectDispatch.m_EffectData.m_iEffectName = g_pStringTableEffectDispatch->AddString( CBaseEntity::IsServer(), pName );
+
+		// Send it to anyone who can see the effect's origin.
+		g_TEEffectDispatch.Create( filter, 0 );
+	}
 }
 
-void DispatchEffect( const char *pName, const CEffectData &data, CRecipientFilter &filter )
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void TE_DispatchEffect( IRecipientFilter& filter, float flDelay, const Vector &pos, const char *pName, const CEffectData &data )
 {
-	te->DispatchEffect( filter, 0.0, data.m_vOrigin, pName, data );
+	DispatchEffect( filter, flDelay, pName, data );
+}
+
+void DispatchEffect( IRecipientFilter& filter, float flDelay, const char *pName, const CEffectData &data )
+{
+	if ( te->CanPredict() && filter.GetRecipientCount() > 0 )
+	{
+		// Copy the supplied effect data.
+		g_TEEffectDispatch.m_EffectData = data;
+
+		// Get the entry index in the string table.
+		g_TEEffectDispatch.m_EffectData.m_iEffectName = g_pStringTableEffectDispatch->AddString( CBaseEntity::IsServer(), pName );
+
+		// Send it to anyone who can see the effect's origin.
+		g_TEEffectDispatch.Create( filter, flDelay );
+	}
 }

@@ -1,13 +1,15 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================//
 
 #include "cbase.h"
 #include "smokegrenade_projectile.h"
-#ifdef CLIENT_DLL
+#if defined( CLIENT_DLL )
 #include "c_cs_player.h"
+#include "particles_new.h"
+#include "particle_parse.h"
 #else
 #include "sendproxy.h"
 #include "particle_smokegrenade.h"
@@ -25,7 +27,8 @@
 #if defined( CLIENT_DLL )
 
 IMPLEMENT_CLIENTCLASS_DT( C_SmokeGrenadeProjectile, DT_SmokeGrenadeProjectile, CSmokeGrenadeProjectile )
-RecvPropBool( RECVINFO( m_bDidSmokeEffect ) )
+RecvPropBool( RECVINFO( m_bDidSmokeEffect ) ),
+RecvPropInt( RECVINFO( m_nSmokeEffectTickBegin ) )
 END_RECV_TABLE()
 
 C_SmokeGrenadeProjectile::C_SmokeGrenadeProjectile()
@@ -40,24 +43,45 @@ C_SmokeGrenadeProjectile::~C_SmokeGrenadeProjectile()
 
 void C_SmokeGrenadeProjectile::PostDataUpdate( DataUpdateType_t type )
 {
-	BaseClass::PostDataUpdate( type );	
+	BaseClass::PostDataUpdate( type );
 }
 
-void C_SmokeGrenadeProjectile::OnDataChanged( DataUpdateType_t updateType ) 
-{ 
-	if ( m_bDidSmokeEffect && !m_bSmokeEffectSpawned )
+void C_SmokeGrenadeProjectile::OnDataChanged( DataUpdateType_t updateType )
+{
+	if ( ( m_nSmokeEffectTickBegin || m_bDidSmokeEffect ) && !m_bSmokeEffectSpawned )
 	{
-		m_bSmokeEffectSpawned = true;
-		// And the smoke grenade particle began! - every call but the first is extraneous here
+		SpawnSmokeEffect();
 		AddSmokeGrenadeHandle( this );
 	}
+}
+
+void C_SmokeGrenadeProjectile::SpawnSmokeEffect()
+{
+	if ( m_bSmokeEffectSpawned )
+		return;
+
+	m_bSmokeEffectSpawned = true;
+	Vector origin = GetNetworkOrigin();
+	CNewParticleEffect *effect = CNewParticleEffect::CreateOrAggregate( NULL, "explosion_smokegrenade", origin );
+	if ( !effect )
+		return;
+
+	effect->SetSortOrigin( origin );
+	effect->SetControlPoint( 0, origin );
+	effect->SetControlPoint( 1, origin );
+	effect->SetControlPointOrientation( 0, Vector( 1, 0, 0 ), Vector( 0, -1, 0 ), Vector( 0, 0, 1 ) );
+
+	int skipTicks = m_nSmokeEffectTickBegin ? gpGlobals->tickcount - m_nSmokeEffectTickBegin : 0;
+	for ( int i = 2; skipTicks > 4 && i < skipTicks; i += 2 )
+		effect->Simulate( gpGlobals->interval_per_tick * 2 );
 }
 #else
 LINK_ENTITY_TO_CLASS( smokegrenade_projectile, CSmokeGrenadeProjectile );
 PRECACHE_WEAPON_REGISTER( smokegrenade_projectile );
 
 IMPLEMENT_SERVERCLASS_ST( CSmokeGrenadeProjectile, DT_SmokeGrenadeProjectile )
-SendPropBool( SENDINFO( m_bDidSmokeEffect ) )
+SendPropBool( SENDINFO( m_bDidSmokeEffect ) ),
+SendPropInt( SENDINFO( m_nSmokeEffectTickBegin ) )
 END_SEND_TABLE()
 
 BEGIN_DATADESC( CSmokeGrenadeProjectile )
@@ -67,18 +91,18 @@ BEGIN_DATADESC( CSmokeGrenadeProjectile )
 END_DATADESC()
 
 
-CSmokeGrenadeProjectile* CSmokeGrenadeProjectile::Create( 
-	const Vector &position, 
-	const QAngle &angles, 
-	const Vector &velocity, 
-	const AngularImpulse &angVelocity, 
+CSmokeGrenadeProjectile* CSmokeGrenadeProjectile::Create(
+	const Vector &position,
+	const QAngle &angles,
+	const Vector &velocity,
+	const AngularImpulse &angVelocity,
 	CBaseCombatCharacter *pOwner )
 {
 	if ( CSGameRules() )
 		CSGameRules()->RecordGrenadeThrow( position, angles, velocity, angVelocity, pOwner, WEAPON_SMOKEGRENADE );
 
 	CSmokeGrenadeProjectile *pGrenade = (CSmokeGrenadeProjectile*)CBaseEntity::Create( "smokegrenade_projectile", position, angles, pOwner );
-	
+
 	// Set the timer for 1 second less than requested. We're going to issue a SOUND_DANGER
 	// one second before detonation.
 	pGrenade->SetTimer( 1.5 );
@@ -89,13 +113,14 @@ CSmokeGrenadeProjectile* CSmokeGrenadeProjectile::Create(
 	pGrenade->SetFriction( 0.7 );
 	pGrenade->m_flDamage = 100;
 	pGrenade->ChangeTeam( pOwner->GetTeamNumber() );
-	pGrenade->ApplyLocalAngularVelocityImpulse( angVelocity );	
+	pGrenade->ApplyLocalAngularVelocityImpulse( angVelocity );
 	pGrenade->SetTouch( &CBaseGrenade::BounceTouch );
 
 	pGrenade->SetGravity( BaseClass::GetGrenadeGravity() );
 	pGrenade->SetFriction( BaseClass::GetGrenadeFriction() );
 	pGrenade->SetElasticity( BaseClass::GetGrenadeElasticity() );
 	pGrenade->m_bDidSmokeEffect = false;
+	pGrenade->m_nSmokeEffectTickBegin = 0;
 	pGrenade->m_flLastBounce = 0;
 
 	pGrenade->m_pWeaponInfo = GetWeaponInfo( WEAPON_SMOKEGRENADE );
@@ -129,9 +154,13 @@ void CSmokeGrenadeProjectile::SmokeDetonate( void )
 	TheBots->SetGrenadeRadius( this, SmokeGrenadeRadius );
 
 	// Ok, we've stopped rolling or whatever. Now detonate.
+	m_nSmokeEffectTickBegin = gpGlobals->tickcount;
 	ParticleSmokeGrenade *pGren = (ParticleSmokeGrenade*)CBaseEntity::Create( PARTICLESMOKEGRENADE_ENTITYNAME, GetAbsOrigin(), QAngle(0,0,0), NULL );
 	if ( pGren )
 	{
+		// Keep the legacy server entity for flashbang/volume queries, while the
+		// projectile's networked tick drives the new client particle effect.
+		pGren->AddEffects( EF_NODRAW );
 		pGren->FillVolume();
 		pGren->SetFadeTime( 15, 20 );
 		pGren->SetAbsOrigin( GetAbsOrigin() );
@@ -245,6 +274,7 @@ void CSmokeGrenadeProjectile::Precache()
 	PrecacheModel( GRENADE_MODEL );
 	PrecacheScriptSound( "BaseSmokeEffect.Sound" );
 	PrecacheScriptSound( "SmokeGrenade.Bounce" );
+	PrecacheParticleSystem( "explosion_smokegrenade" );
 	BaseClass::Precache();
 }
 

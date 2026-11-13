@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //===========================================================================//
@@ -64,7 +64,7 @@
 #include "vgui_controls/AnimationController.h"
 #include "bitmap/tgawriter.h"
 #include "c_world.h"
-#include "perfvisualbenchmark.h"	
+#include "perfvisualbenchmark.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
 #include "hud_closecaption.h"
 #include "colorcorrectionmgr.h"
@@ -521,7 +521,7 @@ void TrackBoneSetupEnt( C_BaseAnimating *pEnt )
 #ifdef _DEBUG
 	if ( IsRetail() )
 		return;
-		
+
 	if ( !cl_ShowBoneSetupEnts.GetInt() )
 		return;
 
@@ -546,7 +546,7 @@ void DisplayBoneSetupEnts()
 #ifdef _DEBUG
 	if ( IsRetail() )
 		return;
-	
+
 	if ( !cl_ShowBoneSetupEnts.GetInt() )
 		return;
 
@@ -554,19 +554,19 @@ void DisplayBoneSetupEnts()
 	int nElements = 0;
 	for ( i=g_BoneSetupEnts.FirstInorder(); i != g_BoneSetupEnts.LastInorder(); i=g_BoneSetupEnts.NextInorder( i ) )
 		++nElements;
-		
+
 	engine->Con_NPrintf( 0, "%d bone setup ents (name/count/entindex) ------------", nElements );
 
 	con_nprint_s printInfo;
 	printInfo.time_to_live = -1;
 	printInfo.fixed_width_font = true;
 	printInfo.color[0] = printInfo.color[1] = printInfo.color[2] = 1;
-	
+
 	printInfo.index = 2;
 	for ( i=g_BoneSetupEnts.FirstInorder(); i != g_BoneSetupEnts.LastInorder(); i=g_BoneSetupEnts.NextInorder( i ) )
 	{
 		CBoneSetupEnt *pEnt = &g_BoneSetupEnts[i];
-		
+
 		if ( pEnt->m_Count >= 3 )
 		{
 			printInfo.color[0] = 1;
@@ -631,7 +631,7 @@ public:
 	// Create movement command
 	virtual void					CreateMove ( int sequence_number, float input_sample_frametime, bool active );
 	virtual void					ExtraMouseSample( float frametime, bool active );
-	virtual bool					WriteUsercmdDeltaToBuffer( bf_write *buf, int from, int to, bool isnewcommand );	
+	virtual bool					WriteUsercmdDeltaToBuffer( bf_write *buf, int from, int to, bool isnewcommand );
 	virtual void					EncodeUserCmdToBuffer( bf_write& buf, int slot );
 	virtual void					DecodeUserCmdFromBuffer( bf_read& buf, int slot );
 
@@ -639,7 +639,7 @@ public:
 	virtual void					View_Render( vrect_t *rect );
 	virtual void					RenderView( const CViewSetup &view, int nClearFlags, int whatToDraw );
 	virtual void					View_Fade( ScreenFade_t *pSF );
-	
+
 	virtual void					SetCrosshairAngle( const QAngle& angle );
 
 	virtual void					InitSprite( CEngineSprite *pSprite, const char *loadname );
@@ -721,11 +721,11 @@ public:
 	virtual void			FileReceived( const char * fileName, unsigned int transferID );
 
 	virtual const char* TranslateEffectForVisionFilter( const char *pchEffectType, const char *pchEffectName );
-	
+
 	virtual void			ClientAdjustStartSoundParams( struct StartSoundParams_t& params );
 
 	virtual void SetAndParseExtendedServerInfo( KeyValues *pExtendedServerInfo );
-	
+
 	// Returns true if the disconnect command has been handled by the client
 	virtual bool DisconnectAttempt( void );
 public:
@@ -794,8 +794,8 @@ const char *GetMaterialNameFromIndex( int nIndex )
 //-----------------------------------------------------------------------------
 void PrecacheParticleSystem( const char *pParticleSystemName )
 {
-	g_pStringTableParticleEffectNames->AddString( false, pParticleSystemName );
-	g_pParticleSystemMgr->PrecacheParticleSystem( pParticleSystemName );
+	int index = g_pStringTableParticleEffectNames->AddString( false, pParticleSystemName );
+	g_pParticleSystemMgr->PrecacheParticleSystem( index, pParticleSystemName );
 }
 
 
@@ -842,7 +842,7 @@ bool IsEngineThreaded()
 // Constructor
 //-----------------------------------------------------------------------------
 
-CHLClient::CHLClient() 
+CHLClient::CHLClient()
 {
 	// Kinda bogus, but the logic in the engine is too convoluted to put it there
 	g_bLevelInitialized = false;
@@ -856,7 +856,7 @@ extern IGameSystem *ViewportClientSystem();
 ISourceVirtualReality *g_pSourceVR = NULL;
 
 // Purpose: Called when the DLL is first loaded.
-// Input  : engineFactory - 
+// Input  : engineFactory -
 // Output : int
 //-----------------------------------------------------------------------------
 int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physicsFactory, CGlobalVarsBase *pGlobals )
@@ -999,8 +999,8 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 
 	vgui::VGui_InitMatSysInterfacesList( "ClientDLL", &appSystemFactory, 1 );
 
-	// Add the client systems.	
-	
+	// Add the client systems.
+
 	// Client Leaf System has to be initialized first, since DetailObjectSystem uses it
 	IGameSystem::Add( GameStringSystem() );
 	IGameSystem::Add( SoundEmitterSystem() );
@@ -1015,7 +1015,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	IGameSystem::Add( ClientSoundscapeSystem() );
 	IGameSystem::Add( PerfVisualBenchmark() );
 	IGameSystem::Add( MumbleSystem() );
-	
+
 	#if defined( TF_CLIENT_DLL )
 	IGameSystem::Add( CustomTextureToolCacheGameSystem() );
 	IGameSystem::Add( TFSharedContentManager() );
@@ -1085,7 +1085,7 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	ClientWorldFactoryInit();
 
 	C_BaseAnimating::InitBoneSetupThreadPool();
-    
+
     g_SkinDatabase.Initialize();
     g_SkinProcessor.Initialize();
 
@@ -1211,13 +1211,13 @@ void CHLClient::Shutdown( void )
 	UncacheAllMaterials();
 
 	IGameSystem::ShutdownAllSystems();
-	
+
 	gHUD.Shutdown();
 	VGui_Shutdown();
 	gTouch.Shutdown();
 
 	ParticleMgr()->Term();
-	
+
 	ClearKeyValuesCache();
 
 #ifndef NO_STEAM
@@ -1229,7 +1229,7 @@ void CHLClient::Shutdown( void )
 	DisconnectDataModel();
 	ShutdownFbx();
 #endif
-	
+
 	// This call disconnects the VGui libraries which we rely on later in the shutdown path, so don't do it
 //	DisconnectTier3Libraries( );
 	DisconnectTier2Libraries( );
@@ -1246,7 +1246,7 @@ void CHLClient::Shutdown( void )
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //  Called when the game initializes
 //  and whenever the vid_mode is changed
 //  so the HUD can reinitialize itself.
@@ -1262,7 +1262,7 @@ int CHLClient::HudVidInit( void )
 }
 
 //-----------------------------------------------------------------------------
-// Method used to allow the client to filter input messages before the 
+// Method used to allow the client to filter input messages before the
 // move record is transmitted to the server
 //-----------------------------------------------------------------------------
 void CHLClient::HudProcessInput( bool bActive )
@@ -1272,7 +1272,7 @@ void CHLClient::HudProcessInput( bool bActive )
 
 //-----------------------------------------------------------------------------
 // Purpose: Called when shared data gets changed, allows dll to modify data
-// Input  : bActive - 
+// Input  : bActive -
 //-----------------------------------------------------------------------------
 void CHLClient::HudUpdate( bool bActive )
 {
@@ -1287,7 +1287,7 @@ void CHLClient::HudUpdate( bool bActive )
 	gHUD.UpdateHud( bActive );
 
 	{
-		C_BaseAnimating::AutoAllowBoneAccess boneaccess( true, false ); 
+		C_BaseAnimating::AutoAllowBoneAccess boneaccess( true, false );
 		IGameSystem::UpdateAllSystems( frametime );
 	}
 
@@ -1305,7 +1305,7 @@ void CHLClient::HudUpdate( bool bActive )
 	// If we're not connected, update sixense so we can move the mouse cursor when in the menus
 	if( !engine->IsConnected() || engine->IsPaused() )
 	{
-		g_pSixenseInput->SixenseFrame( 0, NULL ); 
+		g_pSixenseInput->SixenseFrame( 0, NULL );
 	}
 #endif
 }
@@ -1328,7 +1328,7 @@ void CHLClient::HudText( const char * message )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 bool CHLClient::ShouldDrawDropdownConsole()
 {
@@ -1346,7 +1346,7 @@ bool CHLClient::ShouldDrawDropdownConsole()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 // Output : ClientClass
 //-----------------------------------------------------------------------------
 ClientClass *CHLClient::GetAllClasses( void )
@@ -1355,7 +1355,7 @@ ClientClass *CHLClient::GetAllClasses( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CHLClient::IN_ActivateMouse( void )
 {
@@ -1363,7 +1363,7 @@ void CHLClient::IN_ActivateMouse( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CHLClient::IN_DeactivateMouse( void )
 {
@@ -1371,7 +1371,7 @@ void CHLClient::IN_DeactivateMouse( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CHLClient::IN_Accumulate ( void )
 {
@@ -1379,7 +1379,7 @@ void CHLClient::IN_Accumulate ( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CHLClient::IN_ClearStates ( void )
 {
@@ -1388,7 +1388,7 @@ void CHLClient::IN_ClearStates ( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: Engine can query for particular keys
-// Input  : *name - 
+// Input  : *name -
 //-----------------------------------------------------------------------------
 bool CHLClient::IN_IsKeyDown( const char *name, bool& isdown )
 {
@@ -1397,7 +1397,7 @@ bool CHLClient::IN_IsKeyDown( const char *name, bool& isdown )
 	{
 		return false;
 	}
-	
+
 	isdown = ( key->state & 1 ) ? true : false;
 
 	// Found the key by name
@@ -1406,9 +1406,9 @@ bool CHLClient::IN_IsKeyDown( const char *name, bool& isdown )
 
 //-----------------------------------------------------------------------------
 // Purpose: Engine can issue a key event
-// Input  : eventcode - 
-//			keynum - 
-//			*pszCurrentBinding - 
+// Input  : eventcode -
+//			keynum -
+//			*pszCurrentBinding -
 void CHLClient::IN_OnMouseWheeled( int nDelta )
 {
 #if defined( REPLAY_ENABLED )
@@ -1422,9 +1422,9 @@ void CHLClient::IN_OnMouseWheeled( int nDelta )
 
 //-----------------------------------------------------------------------------
 // Purpose: Engine can issue a key event
-// Input  : eventcode - 
-//			keynum - 
-//			*pszCurrentBinding - 
+// Input  : eventcode -
+//			keynum -
+//			*pszCurrentBinding -
 // Output : int
 //-----------------------------------------------------------------------------
 int CHLClient::IN_KeyEvent( int eventcode, ButtonCode_t keynum, const char *pszCurrentBinding )
@@ -1439,7 +1439,7 @@ void CHLClient::ExtraMouseSample( float frametime, bool active )
 
 	C_BaseAnimating::EnableNewBoneSetupRequest( false );
 
-	C_BaseAnimating::AutoAllowBoneAccess boneaccess( true, false ); 
+	C_BaseAnimating::AutoAllowBoneAccess boneaccess( true, false );
 
 	MDLCACHE_CRITICAL_SECTION();
 	input->ExtraMouseSample( frametime, active );
@@ -1468,7 +1468,7 @@ void CHLClient::CreateMove ( int sequence_number, float input_sample_frametime, 
 	Assert( C_BaseEntity::IsAbsRecomputationsEnabled() );
 	Assert( C_BaseEntity::IsAbsQueriesValid() );
 
-	C_BaseAnimating::AutoAllowBoneAccess boneaccess( true, false ); 
+	C_BaseAnimating::AutoAllowBoneAccess boneaccess( true, false );
 
 	C_BaseAnimating::EnableNewBoneSetupRequest( false );
 
@@ -1479,10 +1479,10 @@ void CHLClient::CreateMove ( int sequence_number, float input_sample_frametime, 
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *buf - 
-//			from - 
-//			to - 
+// Purpose:
+// Input  : *buf -
+//			from -
+//			to -
 //-----------------------------------------------------------------------------
 bool CHLClient::WriteUsercmdDeltaToBuffer( bf_write *buf, int from, int to, bool isnewcommand )
 {
@@ -1490,10 +1490,10 @@ bool CHLClient::WriteUsercmdDeltaToBuffer( bf_write *buf, int from, int to, bool
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : buf - 
-//			buffersize - 
-//			slot - 
+// Purpose:
+// Input  : buf -
+//			buffersize -
+//			slot -
 //-----------------------------------------------------------------------------
 void CHLClient::EncodeUserCmdToBuffer( bf_write& buf, int slot )
 {
@@ -1501,10 +1501,10 @@ void CHLClient::EncodeUserCmdToBuffer( bf_write& buf, int slot )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : buf - 
-//			buffersize - 
-//			slot - 
+// Purpose:
+// Input  : buf -
+//			buffersize -
+//			slot -
 //-----------------------------------------------------------------------------
 void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 {
@@ -1512,7 +1512,7 @@ void CHLClient::DecodeUserCmdFromBuffer( bf_read& buf, int slot )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
 void CHLClient::View_Render( vrect_t *rect )
 {
@@ -1581,8 +1581,8 @@ void CHLClient::InvalidateMdlCache()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *pSF - 
+// Purpose:
+// Input  : *pSF -
 //-----------------------------------------------------------------------------
 void CHLClient::View_Fade( ScreenFade_t *pSF )
 {
@@ -1603,10 +1603,10 @@ void CHLClient::LevelInitPreEntity( char const* pMapName )
 	input->LevelInit();
 
 	vieweffects->LevelInit();
-	
+
 	//Tony; loadup per-map manifests.
 	ParseParticleEffectsMap( pMapName, true );
-	
+
 	// Tell mode manager that map is changing
 	modemanager->LevelInit( pMapName );
 	ParticleMgr()->LevelInit();
@@ -1737,7 +1737,7 @@ void CHLClient::LevelShutdown( void )
 	view->LevelShutdown();
 	beams->ClearBeams();
 	ParticleMgr()->RemoveAllEffects();
-	
+
 	StopAllRumbleEffects();
 
 	gHUD.LevelShutdown();
@@ -1770,7 +1770,7 @@ void CHLClient::LevelShutdown( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: Engine received crosshair offset ( autoaim )
-// Input  : angle - 
+// Input  : angle -
 //-----------------------------------------------------------------------------
 void CHLClient::SetCrosshairAngle( const QAngle& angle )
 {
@@ -1783,8 +1783,8 @@ void CHLClient::SetCrosshairAngle( const QAngle& angle )
 
 //-----------------------------------------------------------------------------
 // Purpose: Helper to initialize sprite from .spr semaphor
-// Input  : *pSprite - 
-//			*loadname - 
+// Input  : *pSprite -
+//			*loadname -
 //-----------------------------------------------------------------------------
 void CHLClient::InitSprite( CEngineSprite *pSprite, const char *loadname )
 {
@@ -1795,8 +1795,8 @@ void CHLClient::InitSprite( CEngineSprite *pSprite, const char *loadname )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *pSprite - 
+// Purpose:
+// Input  : *pSprite -
 //-----------------------------------------------------------------------------
 void CHLClient::ShutdownSprite( CEngineSprite *pSprite )
 {
@@ -1817,9 +1817,9 @@ int CHLClient::GetSpriteSize( void ) const
 
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : entindex - 
-//			bTalking - 
+// Purpose:
+// Input  : entindex -
+//			bTalking -
 //-----------------------------------------------------------------------------
 void CHLClient::VoiceStatus( int entindex, qboolean bTalking )
 {
@@ -1844,7 +1844,7 @@ void OnMaterialStringTableChanged( void *object, INetworkStringTable *stringTabl
 void OnParticleSystemStringTableChanged( void *object, INetworkStringTable *stringTable, int stringNumber, const char *newString, void const *newData )
 {
 	// Make sure this puppy is precached
-	g_pParticleSystemMgr->PrecacheParticleSystem( newString );
+	g_pParticleSystemMgr->PrecacheParticleSystem( stringNumber, newString );
 	RequestCacheUsedMaterials();
 }
 
@@ -1862,18 +1862,18 @@ void OnVguiScreenTableChanged( void *object, INetworkStringTable *stringTable, i
 
 //-----------------------------------------------------------------------------
 // Purpose: Preload the string on the client (if single player it should already be in the cache from the server!!!)
-// Input  : *object - 
-//			*stringTable - 
-//			stringNumber - 
-//			*newString - 
-//			*newData - 
+// Input  : *object -
+//			*stringTable -
+//			stringNumber -
+//			*newString -
+//			*newData -
 //-----------------------------------------------------------------------------
 void OnSceneStringTableChanged( void *object, INetworkStringTable *stringTable, int stringNumber, const char *newString, void const *newData )
 {
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Hook up any callbacks here, the table definition has been parsed but 
+// Purpose: Hook up any callbacks here, the table definition has been parsed but
 //  no data has been added yet
 //-----------------------------------------------------------------------------
 void CHLClient::InstallStringTableCallback( const char *tableName )
@@ -1881,7 +1881,7 @@ void CHLClient::InstallStringTableCallback( const char *tableName )
 	// Here, cache off string table IDs
 	if (!Q_strcasecmp(tableName, "VguiScreen"))
 	{
-		// Look up the id 
+		// Look up the id
 		g_StringTableVguiScreen = networkstringtable->FindTable( tableName );
 
 		// When the material list changes, we need to know immediately
@@ -1889,7 +1889,7 @@ void CHLClient::InstallStringTableCallback( const char *tableName )
 	}
 	else if (!Q_strcasecmp(tableName, "Materials"))
 	{
-		// Look up the id 
+		// Look up the id
 		g_pStringTableMaterials = networkstringtable->FindTable( tableName );
 
 		// When the material list changes, we need to know immediately
@@ -1949,7 +1949,7 @@ void CHLClient::PrecacheMaterial( const char *pMaterialName )
 	{
 		*pFound = 0;
 	}
-		
+
 	IMaterial *pMaterial = materials->FindMaterial( pTempBuf, TEXTURE_GROUP_PRECACHED );
 	if ( !IsErrorMaterial( pMaterial ) )
 	{
@@ -1975,10 +1975,10 @@ void CHLClient::UncacheAllMaterials( )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-// Input  : *pszName - 
-//			iSize - 
-//			*pbuf - 
+// Purpose:
+// Input  : *pszName -
+//			iSize -
+//			*pbuf -
 // Output : Returns true on success, false on failure.
 //-----------------------------------------------------------------------------
 bool CHLClient::DispatchUserMessage( int msg_type, bf_read &msg_data )
@@ -2020,7 +2020,7 @@ bool AddDataChangeEvent( IClientNetworkable *ent, DataUpdateType_t updateType, i
 		// DATA_UPDATE_CREATED always overrides DATA_UPDATE_CHANGED.
 		if ( updateType == DATA_UPDATE_CREATED )
 			g_DataChangedEvents[*pStoredEvent].m_UpdateType = updateType;
-	
+
 		return false;
 	}
 	else
@@ -2045,7 +2045,7 @@ void ProcessOnDataChangedEvents()
 	{
 		CDataChangedEvent *pEvent = &g_DataChangedEvents[i];
 
-		// Reset their stored event identifier.		
+		// Reset their stored event identifier.
 		*pEvent->m_pStoredEvent = -1;
 
 		// Send the event.
@@ -2070,7 +2070,7 @@ void UpdateClientRenderableInPVSStatus()
 		if ( pInfo->m_InPVSStatus & INPVS_YES )
 		{
 			// Ok, this entity already thinks it's in the PVS. No need to notify it.
-			// We need to set the INPVS_YES_THISFRAME flag if it's in this frame at all, so we 
+			// We need to set the INPVS_YES_THISFRAME flag if it's in this frame at all, so we
 			// don't tell the entity it's not in the PVS anymore at the end of the frame.
 			if ( !( pInfo->m_InPVSStatus & INPVS_THISFRAME ) )
 			{
@@ -2088,7 +2088,7 @@ void UpdateClientRenderableInPVSStatus()
 				pInfo->m_InPVSStatus |= ( INPVS_YES | INPVS_THISFRAME | INPVS_NEEDSNOTIFY );
 			}
 		}
-	}	
+	}
 }
 
 void UpdatePVSNotifiers()
@@ -2174,7 +2174,7 @@ void OnRenderStart()
 	// entities	at the correct abs position so that their attachment points
 	// are at the correct location
 	view->OnRenderStart();
-	
+
 	// This will place all entities in the correct position in world space and in the KD-tree
 	C_BaseAnimating::UpdateClientSideAnimations();
 
@@ -2185,7 +2185,7 @@ void OnRenderStart()
 
 #ifndef CSTRIKE_DLL
 	// Reset the overlay alpha. Entities can change the state of this in their think functions.
-	g_SmokeFogOverlayAlpha = 0;	
+	g_SmokeFogOverlayAlpha = 0;
 #endif
 
 	// This must occur prior to SimulatEntities,
@@ -2215,7 +2215,7 @@ void OnRenderStart()
 
 		// Update temp ent beams...
 		beams->UpdateTempEntBeams();
-		
+
 		// Lock the frame from beam additions
 		SetBeamCreationAllowed( false );
 	}
@@ -2288,7 +2288,7 @@ void CHLClient::FrameStageNotify( ClientFrameStage_t curStage )
 			OnRenderStart();
 		}
 		break;
-		
+
 	case FRAME_RENDER_END:
 		{
 			VPROF( "CHLClient::FrameStageNotify FRAME_RENDER_END" );
@@ -2297,7 +2297,7 @@ void CHLClient::FrameStageNotify( ClientFrameStage_t curStage )
 			PREDICTION_SPEWVALUECHANGES();
 		}
 		break;
-		
+
 	case FRAME_NET_UPDATE_START:
 		{
 			VPROF( "CHLClient::FrameStageNotify FRAME_NET_UPDATE_START" );
@@ -2455,7 +2455,7 @@ void CHLClient::WriteSaveGameScreenshot( const char *pFilename )
 void CHLClient::EmitSentenceCloseCaption( char const *tokenstream )
 {
 	extern ConVar closecaption;
-	
+
 	if ( !closecaption.GetBool() )
 		return;
 
@@ -2704,7 +2704,7 @@ CSteamID GetSteamIDForPlayerIndex( int iPlayerIndex )
 
 #endif
 
- 
+
 void CHLClient::IN_TouchEvent( int type, int fingerId, int x, int y )
 {
 	if( enginevgui->IsGameUIVisible() )

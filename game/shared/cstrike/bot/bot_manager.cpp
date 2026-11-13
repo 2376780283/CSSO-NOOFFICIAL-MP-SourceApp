@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================//
@@ -239,7 +239,7 @@ void CBotManager::DestroyAllGrenades( void )
 /**
  * Return true if position is inside a smoke cloud
  */
-bool CBotManager::IsInsideSmokeCloud( const Vector *pos )
+bool CBotManager::IsInsideSmokeCloud( const Vector *pos, float radius )
 {
 	int it = m_activeGrenadeList.Head();
 
@@ -262,8 +262,8 @@ bool CBotManager::IsInsideSmokeCloud( const Vector *pos )
 		{
 			const Vector &smokeOrigin = ag->GetDetonationPosition();
 
-			if ((smokeOrigin - *pos).IsLengthLessThan( ag->GetRadius() ))
-				return true;			
+			if ((smokeOrigin - *pos).IsLengthLessThan( ag->GetRadius() + radius ))
+				return true;
 		}
 	}
 
@@ -273,7 +273,7 @@ bool CBotManager::IsInsideSmokeCloud( const Vector *pos )
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Return true if line intersects smoke volume
- * Determine the length of the line of sight covered by each smoke cloud, 
+ * Determine the length of the line of sight covered by each smoke cloud,
  * and sum them (overlap is additive for obstruction).
  * If the overlap exceeds the threshold, the bot can't see through.
  */

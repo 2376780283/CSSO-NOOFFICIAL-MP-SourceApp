@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================//
@@ -10,20 +10,22 @@
 #pragma once
 
 
-// Use these macros to register something to be precached.
+#include "tier2/resourceprecacher.h"
+
+extern IPrecacheHandler *g_pPrecacheHandler;
+
+// Preserve callback registrations used by this branch alongside resource groups.
 #define PRECACHE_REGISTER_FN(functionName)	static CPrecacheRegister precache_function_##functionName(functionName, 0);
-#define PRECACHE_WEAPON_REGISTER(className)	static CPrecacheRegister precache_weapon_##className(&CPrecacheRegister::PrecacheFn_Other, #className)
-#define PRECACHE_REGISTER(className)		static CPrecacheRegister precache_other_##className( &CPrecacheRegister::PrecacheFn_Other, #className)
 
 class CPrecacheRegister
 {
 public:
-	
+
 	typedef void (*PrecacheFn)(void *pUser);	// Prototype for a custom precache function.
 
 	CPrecacheRegister(PrecacheFn fn, const void *pUser);
 
-	PrecacheFn			m_Fn;	
+	PrecacheFn			m_Fn;
 	void				*m_pUser;
 	CPrecacheRegister	*m_pNext;
 

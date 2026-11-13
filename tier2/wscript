@@ -27,6 +27,7 @@ def build(bld):
 		'meshutils.cpp',
 		'p4helpers.cpp',
 		'renderutils.cpp',
+		'resourceprecacher.cpp',
 		'riff.cpp',
 		'soundutils.cpp',
 		'tier2.cpp',

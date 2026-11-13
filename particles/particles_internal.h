@@ -1,4 +1,4 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//===== Copyright � 1996-2006, Valve Corporation, All rights reserved. ======//
 //
 // Purpose: sheet code for particles and other sprite functions
 //
@@ -53,6 +53,9 @@ struct CWorldCollideContextData
 						  Vector const *pCpOffset = NULL, float flMovementTolerance = 0.  );
 };
 
-#endif // PARTICLES_INTERNAL_H	
+// This is defined in the owner DLL
+extern bool UTIL_IsDedicatedServer( void );
+
+#endif // PARTICLES_INTERNAL_H
 
 

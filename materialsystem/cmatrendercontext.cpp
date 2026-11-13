@@ -372,7 +372,7 @@ void CMatRenderContextBase::BindLightmapPage( int lightmapPageID )
 
 }
 
-void CMatRenderContextBase::SetRenderTargetEx( int nRenderTargetID, ITexture *pNewTarget ) 
+void CMatRenderContextBase::SetRenderTargetEx( int nRenderTargetID, ITexture *pNewTarget )
 {
 	// Verify valid top of RT stack
 	Assert ( m_RenderTargetStack.Count() > 0 );
@@ -533,19 +533,19 @@ void CMatRenderContextBase::LoadIdentity()
 void CMatRenderContextBase::Ortho( double left, double top, double right, double bottom, double zNear, double zFar )
 {
 	MatrixOrtho( m_pCurMatrixItem->matrix, left, top, right, bottom, zNear, zFar );
-	m_pCurMatrixItem->flags = MSF_DIRTY; 
+	m_pCurMatrixItem->flags = MSF_DIRTY;
 }
 
 void CMatRenderContextBase::PerspectiveX( double flFovX, double flAspect, double flZNear, double flZFar )
 {
 	MatrixPerspectiveX( m_pCurMatrixItem->matrix, flFovX, flAspect, flZNear, flZFar );
-	m_pCurMatrixItem->flags = MSF_DIRTY; 
+	m_pCurMatrixItem->flags = MSF_DIRTY;
 }
 
 void CMatRenderContextBase::PerspectiveOffCenterX( double flFovX, double flAspect, double flZNear, double flZFar, double bottom, double top, double left, double right )
 {
 	MatrixPerspectiveOffCenterX( m_pCurMatrixItem->matrix, flFovX, flAspect, flZNear, flZFar, bottom, top, left, right );
-	m_pCurMatrixItem->flags = MSF_DIRTY; 
+	m_pCurMatrixItem->flags = MSF_DIRTY;
 }
 
 void CMatRenderContextBase::PickMatrix( int x, int y, int nWidth, int nHeight )
@@ -574,13 +574,13 @@ void CMatRenderContextBase::PickMatrix( int x, int y, int nWidth, int nHeight )
 void CMatRenderContextBase::Rotate( float flAngle, float x, float y, float z )
 {
 	MatrixRotate( m_pCurMatrixItem->matrix, Vector( x, y, z ), flAngle );
-	m_pCurMatrixItem->flags = MSF_DIRTY; 
+	m_pCurMatrixItem->flags = MSF_DIRTY;
 }
 
 void CMatRenderContextBase::Translate( float x, float y, float z )
 {
 	MatrixTranslate( m_pCurMatrixItem->matrix, Vector( x, y, z ) );
-	m_pCurMatrixItem->flags = MSF_DIRTY; 
+	m_pCurMatrixItem->flags = MSF_DIRTY;
 }
 
 void CMatRenderContextBase::Scale( float x, float y, float z )
@@ -625,24 +625,21 @@ void CMatRenderContextBase::RecomputeViewState()
 	// FIXME: Cache this off to make it less expensive?
 	matrix3x4_t viewMatrix;
 	GetMatrix( MATERIAL_VIEW, &viewMatrix );
-	m_vecViewOrigin.x = 
-		-( viewMatrix[0][3] * viewMatrix[0][0] + 
-		viewMatrix[1][3] * viewMatrix[1][0] + 
+	m_vecViewOrigin.x =
+		-( viewMatrix[0][3] * viewMatrix[0][0] +
+		viewMatrix[1][3] * viewMatrix[1][0] +
 		viewMatrix[2][3] * viewMatrix[2][0] );
-	m_vecViewOrigin.y = 
-		-( viewMatrix[0][3] * viewMatrix[0][1] + 
-		viewMatrix[1][3] * viewMatrix[1][1] + 
+	m_vecViewOrigin.y =
+		-( viewMatrix[0][3] * viewMatrix[0][1] +
+		viewMatrix[1][3] * viewMatrix[1][1] +
 		viewMatrix[2][3] * viewMatrix[2][1] );
-	m_vecViewOrigin.z = 
-		-( viewMatrix[0][3] * viewMatrix[0][2] + 
-		viewMatrix[1][3] * viewMatrix[1][2] + 
+	m_vecViewOrigin.z =
+		-( viewMatrix[0][3] * viewMatrix[0][2] +
+		viewMatrix[1][3] * viewMatrix[1][2] +
 		viewMatrix[2][3] * viewMatrix[2][2] );
 
-	// FIXME Implement computation of m_vecViewForward, etc
-	m_vecViewForward.Init();
-	m_vecViewRight.Init();
-
-	// FIXME: Is this correct?
+	m_vecViewForward.Init( -viewMatrix[2][0], -viewMatrix[2][1], -viewMatrix[2][2] );
+	m_vecViewRight.Init( viewMatrix[0][0], viewMatrix[0][1], viewMatrix[0][2] );
 	m_vecViewUp.Init( viewMatrix[1][0], viewMatrix[1][1], viewMatrix[1][2] );
 }
 
@@ -656,15 +653,12 @@ void CMatRenderContextBase::GetWorldSpaceCameraVectors( Vector *pVecForward, Vec
 {
 	RecomputeViewState();
 
-	// FIXME Implement computation of m_vecViewForward
-	Assert( 0 );
-
 	if ( pVecForward )
 	{
 		VectorCopy( m_vecViewForward, *pVecForward );
 	}
 	if ( pVecRight )
-	{				   
+	{
 		VectorCopy( m_vecViewRight, *pVecRight );
 	}
 	if ( pVecUp )
@@ -721,7 +715,7 @@ void CMatRenderContextBase::SetHeightClipMode( enum MaterialHeightClipMode_t hei
 		UpdateHeightClipUserClipPlane();
 		/*if ( HardwareConfig()->MaxUserClipPlanes() >= 1 && !HardwareConfig()->UseFastClipping())
 		{
-		UpdateHeightClipUserClipPlane();			
+		UpdateHeightClipUserClipPlane();
 		}
 		else
 		{
@@ -743,7 +737,7 @@ void CMatRenderContextBase::SetHeightClipZ( float z )
 
 	/*if ( HardwareConfig()->MaxUserClipPlanes() >= 1 && !HardwareConfig()->UseFastClipping() )
 	{
-	UpdateHeightClipUserClipPlane();			
+	UpdateHeightClipUserClipPlane();
 	}
 	else
 	{
@@ -756,7 +750,7 @@ bool CMatRenderContextBase::EnableClipping( bool bEnable )
 	if( bEnable != m_bEnableClipping )
 	{
 		m_bEnableClipping = bEnable;
-		ApplyCustomClipPlanes();		
+		ApplyCustomClipPlanes();
 
 		return !bEnable;
 	}
@@ -882,7 +876,7 @@ void CMatRenderContextBase::RecomputeViewProjState()
 }
 
 //-----------------------------------------------------------------------------
-// This returns the diameter of the sphere in pixels based on 
+// This returns the diameter of the sphere in pixels based on
 // the current model, view, + projection matrices and viewport.
 //-----------------------------------------------------------------------------
 float CMatRenderContextBase::ComputePixelDiameterOfSphere( const Vector& vecAbsOrigin, float flRadius )
@@ -937,8 +931,8 @@ void CMatRenderContextBase::OnAsyncCreateTextureFromRenderTarget( ITexture* pSrc
 	Assert( pSrcRt != NULL );
 	Assert( pRecipient != NULL );
 	Assert( ppDstName != NULL && *ppDstName != NULL);
-	
-	// Bump the ref count on the recipient before handing it off. This ensures the receiver won't go away before we have completed our work. 
+
+	// Bump the ref count on the recipient before handing it off. This ensures the receiver won't go away before we have completed our work.
 	pSrcRt->AddRef();
 	pRecipient->AddRef();
 
@@ -948,7 +942,7 @@ void CMatRenderContextBase::OnAsyncCreateTextureFromRenderTarget( ITexture* pSrc
 	( *ppDstName ) = pDstNameCopy;
 }
 
-// Map and unmap a texture. The pRecipient->OnAsyncMapComplete is called when complete. 
+// Map and unmap a texture. The pRecipient->OnAsyncMapComplete is called when complete.
 void CMatRenderContextBase::OnAsyncMap( ITextureInternal* pTexToMap, IAsyncTextureOperationReceiver* pRecipient, void* pExtraArgs )
 {
 	Assert( pTexToMap != NULL );
@@ -958,7 +952,7 @@ void CMatRenderContextBase::OnAsyncMap( ITextureInternal* pTexToMap, IAsyncTextu
 	pRecipient->AddRef();
 }
 
-void CMatRenderContextBase::OnAsyncUnmap( ITextureInternal* pTexToUnmap ) 
+void CMatRenderContextBase::OnAsyncUnmap( ITextureInternal* pTexToUnmap )
 {
 	Assert( pTexToUnmap != NULL );
 
@@ -976,7 +970,7 @@ void CMatRenderContextBase::OnAsyncCopyRenderTargetToStagingTexture( ITexture* p
 	pRecipient->AddRef();
 }
 
-#undef g_pShaderAPI 
+#undef g_pShaderAPI
 
 //-----------------------------------------------------------------------------
 //
@@ -1183,7 +1177,7 @@ void CMatRenderContext::PushMatrix()
 
 	CMatRenderContextBase::PushMatrix();
 	g_pShaderAPI->PushMatrix();
-	
+
 	if ( ShouldValidateMatrices() )
 	{
 		TestMatrixSync( m_MatrixMode );
@@ -1511,7 +1505,7 @@ void CMatRenderContext::PushCustomClipPlane( const float *pPlane )
 void CMatRenderContext::PopCustomClipPlane( void )
 {
 	Assert( m_CustomClipPlanes.Count() );
-	
+
 	//remove the endmost non-height plane found
 	int i;
 	for( i = m_CustomClipPlanes.Count(); --i >= 0; )
@@ -1527,7 +1521,7 @@ void CMatRenderContext::PopCustomClipPlane( void )
 }
 
 void CMatRenderContext::ApplyCustomClipPlanes( void )
-{	
+{
 	int iMaxClipPlanes = HardwareConfig()->MaxUserClipPlanes();
 	int iCustomPlanes;
 
@@ -1586,7 +1580,7 @@ void CMatRenderContext::ApplyCustomClipPlanes( void )
 			g_pShaderAPI->EnableFastClip( true );
 			g_pShaderAPI->SetFastClipPlane( m_CustomClipPlanes[iCustomPlanes - 1].fValues );
 		}
-	}	
+	}
 }
 
 
@@ -1656,7 +1650,7 @@ IMesh* CMatRenderContext::GetDynamicMesh( bool buffered, IMesh* pVertexOverride,
 		--nCurrentBoneCount;
 	}
 
-	return g_pShaderAPI->GetDynamicMesh( GetCurrentMaterialInternal(), nCurrentBoneCount, 
+	return g_pShaderAPI->GetDynamicMesh( GetCurrentMaterialInternal(), nCurrentBoneCount,
 		buffered, pVertexOverride, pIndexOverride);
 }
 
@@ -1687,7 +1681,7 @@ IMesh* CMatRenderContext::GetDynamicMeshEx( VertexFormat_t vertexFormat, bool bB
 		--nCurrentBoneCount;
 	}
 
-	return g_pShaderAPI->GetDynamicMeshEx( GetCurrentMaterialInternal(), vertexFormat, nCurrentBoneCount, 
+	return g_pShaderAPI->GetDynamicMeshEx( GetCurrentMaterialInternal(), vertexFormat, nCurrentBoneCount,
 		bBuffered, pVertexOverride, pIndexOverride );
 }
 
@@ -1719,13 +1713,13 @@ void CMatRenderContext::CommitRenderTargetAndViewport( void )
 		if ( element.m_pRenderTargets[rt] == NULL )
 		{
 			g_pShaderAPI->SetRenderTargetEx(rt); // No texture parameter here indicates back buffer
-			
+
 			if ( IsPC() )
 			{
 				Assert( ImageLoader::SizeInBytes( g_pShaderDevice->GetBackBufferFormat() ) <= 4 );
 				g_pShaderAPI->EnableLinearColorSpaceFrameBuffer( false );
 			}
-			
+
 			if (rt == 0)										// the first rt sets the viewport
 			{
 				// If either dimension is negative, set to full bounds of back buffer
@@ -1867,23 +1861,23 @@ void CMatRenderContext::EnableNonInteractiveMode( MaterialNonInteractiveMode_t m
 		info.m_flNormalizedSize = m_flNormalizedSize;
 
 		ITextureInternal *pTexInternal = static_cast<ITextureInternal*>( (ITexture*)m_pNonInteractiveTempFullscreenBuffer[mode] );
-		info.m_hTempFullscreenTexture = pTexInternal ? 
+		info.m_hTempFullscreenTexture = pTexInternal ?
 			pTexInternal->GetTextureHandle(0) : INVALID_SHADERAPI_TEXTURE_HANDLE;
 		ITextureInternal *pTexPacifierInternal = static_cast<ITextureInternal*>( (ITexture*)m_pNonInteractivePacifier );
 		info.m_nPacifierCount = pTexPacifierInternal ? pTexPacifierInternal->GetNumAnimationFrames() : 0;
 		for ( int i = 0; i < info.m_nPacifierCount; ++i )
 		{
-			info.m_pPacifierTextures[i] = pTexPacifierInternal->GetTextureHandle( i ); 
+			info.m_pPacifierTextures[i] = pTexPacifierInternal->GetTextureHandle( i );
 		}
 		g_pShaderDevice->EnableNonInteractiveMode( mode, &info );
 	}
 }
 
-void CMatRenderContext::SetRenderTargetEx( int nRenderTargetID, ITexture *pNewTarget ) 
+void CMatRenderContext::SetRenderTargetEx( int nRenderTargetID, ITexture *pNewTarget )
 {
 	// Verify valid top of RT stack
 	Assert ( m_RenderTargetStack.Count() > 0 );
-	
+
 	// Grab the old target
 	ITexture *pOldTarget = m_RenderTargetStack.Top().m_pRenderTargets[nRenderTargetID];
 
@@ -1899,8 +1893,8 @@ void CMatRenderContext::SetRenderTargetEx( int nRenderTargetID, ITexture *pNewTa
 			{
 				m_Viewport.m_nTopLeftX = 0;
 				m_Viewport.m_nTopLeftY = 0;
-				g_pShaderAPI->GetBackBufferDimensions( m_Viewport.m_nWidth, m_Viewport.m_nHeight ); 
-				g_pShaderAPI->SetViewports( 1, &m_Viewport ); 
+				g_pShaderAPI->GetBackBufferDimensions( m_Viewport.m_nWidth, m_Viewport.m_nHeight );
+				g_pShaderAPI->SetViewports( 1, &m_Viewport );
 			}
 			g_pShaderAPI->SetRenderTargetEx( nRenderTargetID ); // No parameter here indicates back buffer
 		}
@@ -1916,7 +1910,7 @@ void CMatRenderContext::SetRenderTargetEx( int nRenderTargetID, ITexture *pNewTa
 				m_Viewport.m_nTopLeftY = 0;
 				m_Viewport.m_nWidth = pNewTarget->GetActualWidth();
 				m_Viewport.m_nHeight = pNewTarget->GetActualHeight();
-				g_pShaderAPI->SetViewports( 1, &m_Viewport ); 
+				g_pShaderAPI->SetViewports( 1, &m_Viewport );
 			}
 			ITextureInternal *pTexInt = static_cast<ITextureInternal*>(pNewTarget);
 			if ( pTexInt )
@@ -1979,8 +1973,8 @@ void CMatRenderContext::DrawScreenSpaceQuad( IMaterial* pMaterial )
 	if ( ( w == 0 ) || ( h == 0 ) )
 		return;
 
-	// DX9 disagrees about (0, 0) in a render target and (0, 0) in the texture. 
-	// Fix that here by doing a half-pixel offset for the pixel. 
+	// DX9 disagrees about (0, 0) in a render target and (0, 0) in the texture.
+	// Fix that here by doing a half-pixel offset for the pixel.
 	// Because we are working in clip space which is 2 units across, the adjustment factor is 1.
 	float flOffsetW = 1.0f / w;
 	float flOffsetH = 1.0f / h;
@@ -1999,7 +1993,7 @@ void CMatRenderContext::DrawScreenSpaceQuad( IMaterial* pMaterial )
 		float u, v;
 	};
 
-	CoordSSQ_t coords[] = { 
+	CoordSSQ_t coords[] = {
 		{ -1.0f - 1.0f * flOffsetW,  1.0f + 1.0f * flOffsetH,  0.0f,  0.0f }, // TL
 		{ -1.0f - 1.0f * flOffsetW, -3.0f + 1.0f * flOffsetH,  0.0f,  2.0f }, // BL
 		{  3.0f - 1.0f * flOffsetW,  1.0f + 1.0f * flOffsetH,  2.0f,  0.0f }, // TR
@@ -2025,7 +2019,7 @@ void CMatRenderContext::DrawScreenSpaceQuad( IMaterial* pMaterial )
 
 		meshBuilder.AdvanceVertex();
 	}
-									   
+
 	meshBuilder.End();
 	pMesh->Draw();
 
@@ -2036,7 +2030,7 @@ void CMatRenderContext::DrawScreenSpaceQuad( IMaterial* pMaterial )
 	PopMatrix();
 }
 
-void CMatRenderContext::DrawScreenSpaceRectangle( 
+void CMatRenderContext::DrawScreenSpaceRectangle(
 	IMaterial *pMaterial,
 	int destx, int desty,
 	int width, int height,
@@ -2050,7 +2044,7 @@ void CMatRenderContext::DrawScreenSpaceRectangle(
 {
 	pMaterial = ((IMaterialInternal *)pMaterial)->GetRealTimeVersion();
 
-	::DrawScreenSpaceRectangle( pMaterial, destx, desty, width, height, 
+	::DrawScreenSpaceRectangle( pMaterial, destx, desty, width, height,
 		src_texture_x0, src_texture_y0,	src_texture_x1, src_texture_y1,
 		src_texture_width, src_texture_height, pClientRenderable, nXDice, nYDice );
 	return;
@@ -2194,7 +2188,7 @@ void CMatRenderContext::CopyRenderTargetToTextureEx( ITexture *pTexture, int nRe
 	}
 	else
 	{
-		// X360 only does 1:1 resolves. So we can do full resolves to textures of size 
+		// X360 only does 1:1 resolves. So we can do full resolves to textures of size
 		// equal or greater than the viewport trivially. Downsizing is nasty.
 		Rect_t srcRect;
 		if ( !pSrcRect )
@@ -2229,7 +2223,7 @@ void CMatRenderContext::CopyRenderTargetToTextureEx( ITexture *pTexture, int nRe
 			return;
 		}
 
-		if( (pDstRect->x == 0) && (pDstRect->y == 0) && 
+		if( (pDstRect->x == 0) && (pDstRect->y == 0) &&
 			(pDstRect->width == pTexture->GetActualWidth()) && (pDstRect->height == pTexture->GetActualHeight()) &&
 			(pDstRect->width >= pSrcRect->width) && (pDstRect->height >= pSrcRect->height) )
 		{
@@ -2257,7 +2251,7 @@ void CMatRenderContext::CopyRenderTargetToTextureEx( ITexture *pTexture, int nRe
 		DrawScreenSpaceRectangle(
 			GetMaterialSystem()->GetRenderTargetBlitMaterial(),
 			pDstRect->x, pDstRect->y, pDstRect->width, pDstRect->height,
-			pSrcRect->x, pSrcRect->y, pSrcRect->x+pSrcRect->width-1, pSrcRect->y+pSrcRect->height-1, 
+			pSrcRect->x, pSrcRect->y, pSrcRect->x+pSrcRect->width-1, pSrcRect->y+pSrcRect->height-1,
 			pFullFrameFB->GetActualWidth(), pFullFrameFB->GetActualHeight() );
 
 		// resolve render target to texture
@@ -2446,7 +2440,7 @@ void CMatRenderContext::UpdateHeightClipUserClipPlane( void )
 		if( m_CustomClipPlanes[iExistingHeightClipPlaneIndex].bHack_IsHeightClipPlane )
 			break;
 	}
-	
+
 	switch( m_HeightClipMode )
 	{
 	case MATERIAL_HEIGHTCLIPMODE_DISABLE:
@@ -2484,7 +2478,7 @@ void CMatRenderContext::UpdateHeightClipUserClipPlane( void )
 	};
 
 	ApplyCustomClipPlanes();
-	
+
 	/*switch( m_HeightClipMode )
 	{
 	case MATERIAL_HEIGHTCLIPMODE_DISABLE:
@@ -2671,7 +2665,7 @@ void CMatRenderContext::BindStandardTexture( Sampler_t sampler, StandardTextureI
 	case TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0:
 	case TEXTURE_FRAME_BUFFER_FULL_TEXTURE_1:
 		{
-			int nTextureIndex = id - TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0; 
+			int nTextureIndex = id - TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0;
 			if( m_pCurrentFrameBufferCopyTexture[ nTextureIndex ] )
 			{
 				( ( ITextureInternal * )m_pCurrentFrameBufferCopyTexture[ nTextureIndex ] )->Bind( sampler );
@@ -2776,7 +2770,7 @@ void CMatRenderContext::GetStandardTextureDimensions( int *pWidth, int *pHeight,
 	case TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0:
 	case TEXTURE_FRAME_BUFFER_FULL_TEXTURE_1:
 		{
-			int nTextureIndex = id - TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0; 
+			int nTextureIndex = id - TEXTURE_FRAME_BUFFER_FULL_TEXTURE_0;
 			pTexture = m_pCurrentFrameBufferCopyTexture[ nTextureIndex ];
 		}
 		break;
@@ -2869,7 +2863,7 @@ void CMatRenderContext::SetFlashlightStateEx( const FlashlightState_t &state, co
 		{
 			blackCube[i].Init( 0.0f, 0.0f, 0.0f, 0.0f );
 		}
-		SetAmbientLightCube( blackCube );		
+		SetAmbientLightCube( blackCube );
 
 		// Disable all the lights except for the first one.
 		for( i = 1; i < HardwareConfig()->MaxNumLights(); ++i )
@@ -2957,7 +2951,7 @@ bool CMatRenderContext::OnDrawMeshModulated( IMesh *pMesh, const Vector4D& vecDi
 
 void CMatRenderContext::AsyncCreateTextureFromRenderTarget( ITexture* pSrcRt, const char* pDstName, ImageFormat dstFmt, bool bGenMips, int nAdditionalCreationFlags, IAsyncTextureOperationReceiver* pRecipient, void* pExtraArgs )
 {
-	if ( g_pMaterialSystem->GetThreadMode() == MATERIAL_SINGLE_THREADED ) 
+	if ( g_pMaterialSystem->GetThreadMode() == MATERIAL_SINGLE_THREADED )
 	{
 		OnAsyncCreateTextureFromRenderTarget( pSrcRt, &pDstName, pRecipient );
 	}

@@ -29,6 +29,7 @@ class INetworkSystem;
 class IP4;
 class IMdlLib;
 class IQueuedLoader;
+class IPrecacheSystem;
 
 
 //-----------------------------------------------------------------------------
@@ -49,6 +50,7 @@ extern IColorCorrectionSystem *colorcorrection;
 extern IP4 *p4;
 extern IMdlLib *mdllib;
 extern IQueuedLoader *g_pQueuedLoader;
+extern IPrecacheSystem *g_pPrecacheSystem;
 
 
 //-----------------------------------------------------------------------------
@@ -76,7 +78,7 @@ void InitCommandLineProgram( int argc, char **argv );
 //-----------------------------------------------------------------------------
 // Helper empty implementation of an IAppSystem for tier2 libraries
 //-----------------------------------------------------------------------------
-template< class IInterface, int ConVarFlag = 0 > 
+template< class IInterface, int ConVarFlag = 0 >
 class CTier2AppSystem : public CTier1AppSystem< IInterface, ConVarFlag >
 {
 	typedef CTier1AppSystem< IInterface, ConVarFlag > BaseClass;
@@ -86,7 +88,7 @@ public:
 	{
 	}
 
-	virtual bool Connect( CreateInterfaceFn factory ) 
+	virtual bool Connect( CreateInterfaceFn factory )
 	{
 		if ( !BaseClass::Connect( factory ) )
 			return false;
@@ -113,7 +115,7 @@ public:
 		BaseClass::Shutdown();
 	}
 
-	virtual void Disconnect() 
+	virtual void Disconnect()
 	{
 		if ( BaseClass::IsPrimaryAppSystem() )
 		{

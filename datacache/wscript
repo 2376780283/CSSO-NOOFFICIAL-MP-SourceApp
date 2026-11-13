@@ -17,6 +17,7 @@ def configure(conf):
 def build(bld):
 	source = [
 		'datacache.cpp',
+		'precachesystem.cpp',
 		'mdlcache.cpp',
 		'../public/studio.cpp',
 		'../public/studio_virtualmodel.cpp',

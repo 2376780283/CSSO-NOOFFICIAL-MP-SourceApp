@@ -1,6 +1,6 @@
 //========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Purpose:
 //
 //=============================================================================//
 
@@ -11,6 +11,8 @@
 #include "KeyValues.h"
 #include "weapon_csbase.h"
 #include "cs_gamerules.h"
+#include "decals.h"
+#include "bot_manager.h"
 
 #define GRENADE_MODEL "models/Weapons/w_eq_fraggrenade_dropped.mdl"
 
@@ -18,26 +20,26 @@
 LINK_ENTITY_TO_CLASS( hegrenade_projectile, CHEGrenadeProjectile );
 PRECACHE_WEAPON_REGISTER( hegrenade_projectile );
 
-CHEGrenadeProjectile* CHEGrenadeProjectile::Create( 
-	const Vector &position, 
-	const QAngle &angles, 
-	const Vector &velocity, 
-	const AngularImpulse &angVelocity, 
-	CBaseCombatCharacter *pOwner, 
+CHEGrenadeProjectile* CHEGrenadeProjectile::Create(
+	const Vector &position,
+	const QAngle &angles,
+	const Vector &velocity,
+	const AngularImpulse &angVelocity,
+	CBaseCombatCharacter *pOwner,
 	float timer )
 {
 	if ( CSGameRules() )
 		CSGameRules()->RecordGrenadeThrow( position, angles, velocity, angVelocity, pOwner, WEAPON_HEGRENADE );
-	
+
 	CHEGrenadeProjectile *pGrenade = (CHEGrenadeProjectile*)CBaseEntity::Create( "hegrenade_projectile", position, angles, pOwner );
-	
+
 	// Set the timer for 1 second less than requested. We're going to issue a SOUND_DANGER
 	// one second before detonation.
 
 	pGrenade->SetDetonateTimerLength( 1.5 );
 	pGrenade->SetAbsVelocity( velocity );
 	pGrenade->SetupInitialTransmittedGrenadeVelocity( velocity );
-	pGrenade->SetThrower( pOwner ); 
+	pGrenade->SetThrower( pOwner );
 
 	pGrenade->SetGravity( BaseClass::GetGrenadeGravity() );
 	pGrenade->SetFriction( BaseClass::GetGrenadeFriction() );
@@ -46,7 +48,7 @@ CHEGrenadeProjectile* CHEGrenadeProjectile::Create(
 	pGrenade->m_flDamage = 100;
 	pGrenade->m_DmgRadius = pGrenade->m_flDamage * 3.5f;
 	pGrenade->ChangeTeam( pOwner->GetTeamNumber() );
-	pGrenade->ApplyLocalAngularVelocityImpulse( angVelocity );	
+	pGrenade->ApplyLocalAngularVelocityImpulse( angVelocity );
 
 	// make NPCs afaid of it while in the air
 	pGrenade->SetThink( &CHEGrenadeProjectile::DangerSoundThink );
@@ -70,6 +72,11 @@ void CHEGrenadeProjectile::Precache()
 	PrecacheModel( GRENADE_MODEL );
 
 	PrecacheScriptSound( "HEGrenade.Bounce" );
+	PrecacheParticleSystem( "explosion_basic_water" );
+	PrecacheParticleSystem( "explosion_hegrenade_brief" );
+	PrecacheParticleSystem( "explosion_hegrenade_dirt" );
+	PrecacheParticleSystem( "explosion_hegrenade_snow" );
+	PrecacheParticleSystem( "explosion_basic" );
 
 	BaseClass::Precache();
 }
@@ -97,4 +104,34 @@ void CHEGrenadeProjectile::Detonate()
 			gameeventmanager->FireEvent( event );
 		}
 	}
+}
+
+const char *CHEGrenadeProjectile::GetParticleSystemName( int pointContents, surfacedata_t *pdata )
+{
+	if ( pointContents & MASK_WATER )
+		return "explosion_basic_water";
+	// [msmith] If the grenade goes off near smoke, then we need to make sure that it doesn't
+	// spawn any of it's own smoke (the explosion_hegrenade_brief effect has no smoke).
+	// This fixes an exploit that allowed players to "see through" the smokegrenade smoke.
+	const Vector *detonatePosition = &GetAbsOrigin();
+	if ( TheBots->IsInsideSmokeCloud( detonatePosition, HEGrenadeRadius ) )
+		return "explosion_hegrenade_brief";
+
+	if ( pdata )
+	{
+		switch( pdata->game.material )
+		{
+		case CHAR_TEX_DIRT:
+		case CHAR_TEX_SAND:
+		case CHAR_TEX_GRASS:
+		case CHAR_TEX_MUD:
+		case CHAR_TEX_FOLIAGE:
+			return "explosion_hegrenade_dirt";
+
+		case CHAR_TEX_SNOW:
+			return "explosion_hegrenade_snow";
+		}
+	}
+
+	return "explosion_basic";
 }
