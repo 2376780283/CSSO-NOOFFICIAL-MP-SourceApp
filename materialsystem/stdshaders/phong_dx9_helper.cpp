@@ -22,7 +22,7 @@
 
 static ConVar mat_displacementmap( "mat_displacementmap", "1", FCVAR_CHEAT );
 static ConVar r_lightwarpidentity( "r_lightwarpidentity", "0", FCVAR_CHEAT );
-static ConVar r_rimlight( "r_rimlight", "1", FCVAR_CHEAT );
+static ConVar r_rimlight( "r_rimlight", "1", FCVAR_NONE );
 
 static ConVar cl_teamid_min( "cl_teamid_min", "200" );
 static ConVar cl_teamid_max( "cl_teamid_max", "1000" );
