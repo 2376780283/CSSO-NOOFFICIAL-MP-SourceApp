@@ -67,7 +67,7 @@ class CHudChat;
 
 ConVar cl_draw_only_deathnotices( "cl_draw_only_deathnotices", "0", FCVAR_CHEAT, "For drawing only the crosshair and death notices (used for moviemaking)" );
 
-ConVar default_fov( "default_fov", "90", FCVAR_CHEAT );
+ConVar default_fov( "default_fov", "100", FCVAR_CHEAT );
 
 IClientMode *g_pClientMode = NULL;
 
