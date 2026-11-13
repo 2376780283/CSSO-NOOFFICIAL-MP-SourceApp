@@ -630,6 +630,8 @@ void CInventoryPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
 	BaseClass::ApplySchemeSettings( pScheme );
 	SetBgColor( pScheme->GetColor( "Frame.BgColor", Color( 30, 30, 30, 255 ) ) );
+	// Load the skins when the page have open
+	LoadAllSkins();
 }
 
 void CInventoryPanel::OnThink()
