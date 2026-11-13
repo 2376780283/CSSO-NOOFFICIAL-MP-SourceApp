@@ -19,7 +19,6 @@
 #include "threads.h"
 #include "pacifier.h"
 
-#define	MAX_THREADS	16
 
 
 class CRunThreadsData
@@ -30,7 +29,7 @@ public:
 	RunThreadsFn m_Fn;
 };
 
-CRunThreadsData g_RunThreadsData[MAX_THREADS];
+CRunThreadsData g_RunThreadsData[MAX_TOOL_THREADS];
 
 
 int		dispatch;
@@ -40,7 +39,7 @@ qboolean		pacifier;
 qboolean	threaded;
 bool g_bLowPriorityThreads = false;
 
-HANDLE g_ThreadHandles[MAX_THREADS];
+HANDLE g_ThreadHandles[MAX_TOOL_THREADS];
 
 
 
