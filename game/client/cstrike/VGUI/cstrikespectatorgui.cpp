@@ -65,6 +65,7 @@ ConVar cl_radar_square( "cl_radar_square", "2", FCVAR_ARCHIVE, "0 - round radar,
 ConVar cl_radaralpha( "cl_radaralpha", "200", FCVAR_CLIENTDLL | FCVAR_ARCHIVE, NULL, true, 0, true, 255 );
 ConVar cl_radar_rotate( "cl_radar_rotate", "1", FCVAR_ARCHIVE, "1" );
 ConVar cl_radar_scale( "cl_radar_scale", "0.7", FCVAR_ARCHIVE, "Sets the radar scale. Valid values are 0.25 to 1.0.", true, 0.25f, true, 1.0f );
+ConVar cl_radar_panel_scale( "cl_radar_panel_scale", "1.0", FCVAR_ARCHIVE, "Scale the radar panel size. 1.0 = default. Range: 0.5 to 2.5.", true, 0.5f, true, 2.5f );
 
 #define HOSTAGE_RESCUE_DURATION (2.5f)
 #define BOMB_FADE_DURATION (2.5f)
@@ -475,11 +476,16 @@ void CCSMapOverview::ApplySettings(KeyValues *inResourceData)
 	g_pMatSystemSurface->OverrideProportionalBase( m_iBaseResolutionOverride[0], m_iBaseResolutionOverride[1] );
 	m_nBorderSize = scheme()->GetProportionalScaledValue( inResourceData->GetInt( "transparent_border_size" ) );
 	g_pMatSystemSurface->RestoreProportionalBase();
+
+	// Capture resource dimensions, never the previously scaled dimensions.
+	GetSize( m_nRadarPanelBaseWide, m_nRadarPanelBaseTall );
 }
 
 //-----------------------------------------------------------------------------
 void CCSMapOverview::Update( void )
 {
+	UpdateSizeAndPosition();
+
 	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
 
 	if ( !pPlayer )
@@ -693,6 +699,8 @@ CCSMapOverview::CCSMapOverview( const char *pElementName ) : BaseClass( pElement
 	m_vecRadarVerticalSections.RemoveAll();
 
 	m_bRoundRadar = true;
+	m_nRadarPanelBaseWide = 0;
+	m_nRadarPanelBaseTall = 0;
 }
 
 void CCSMapOverview::Init( void )
@@ -2318,6 +2326,15 @@ void CCSMapOverview::SetMode(int mode)
 
 void CCSMapOverview::UpdateSizeAndPosition()
 {
+	if ( m_nRadarPanelBaseWide > 0 && m_nRadarPanelBaseTall > 0 )
+	{
+		const float scale = GetMode() == MAP_MODE_RADAR ? cl_radar_panel_scale.GetFloat() : 1.0f;
+		const int wide = MAX( 1, (int)(m_nRadarPanelBaseWide * scale + 0.5f) );
+		const int tall = MAX( 1, (int)(m_nRadarPanelBaseTall * scale + 0.5f) );
+		if ( GetWide() != wide || GetTall() != tall )
+			SetSize( wide, tall );
+	}
+
 	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
 	if ( !pPlayer )
 		return;
@@ -2555,7 +2572,7 @@ int CCSMapOverview::GetBorderSize( void )
 	if ( !m_bRoundRadar && cl_radar_square.GetInt() != 1 )
 		return 0;
 
-	return m_nBorderSize;
+	return (int)(m_nBorderSize * (GetMode() == MAP_MODE_RADAR ? cl_radar_panel_scale.GetFloat() : 1.0f) + 0.5f);
 }
 
 //-----------------------------------------------------------------------------

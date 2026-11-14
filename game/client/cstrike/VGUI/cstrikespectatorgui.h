@@ -258,6 +258,8 @@ private:
 	bool CanHostageBeSeen(MapPlayer_t *hostage);
 
 	int		m_nBorderSize;
+	int		m_nRadarPanelBaseWide;
+	int		m_nRadarPanelBaseTall;
 
 	CSMapPlayer_t	m_PlayersCSInfo[MAX_PLAYERS];
 	CSMapBomb_t		m_bomb;

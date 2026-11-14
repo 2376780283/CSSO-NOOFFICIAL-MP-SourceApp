@@ -41,6 +41,8 @@ public:
 	~CHudRadar();
 
 	virtual void Paint();
+	virtual void ApplySettings( KeyValues *inResourceData );
+	virtual void OnThink();
 	virtual void Init();
 	virtual void LevelInit();
 	virtual bool ShouldDraw();
@@ -60,6 +62,9 @@ private:
 
 	void FillRect( int x, int y, int w, int h );
 	void DrawRadarDot( int x, int y, float z_diff, int iBaseDotSize, int flags, int r, int g, int b, int a );
+
+	int m_nPanelBaseWide;
+	int m_nPanelBaseTall;
 
 	CHudTexture *m_pBackground;
 	CHudTexture *m_pBackgroundTrans;

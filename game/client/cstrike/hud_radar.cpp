@@ -32,6 +32,7 @@
 #define RADAR_IGNORE_Z			(1<<6)	//always draw this item as if it was at the same Z as the player
 
 extern CUtlVector< CC4* > g_C4s;
+extern ConVar cl_radar_panel_scale;
 
 DECLARE_HUDELEMENT( CHudRadar );
 DECLARE_HUD_MESSAGE( CHudRadar, UpdateRadar );
@@ -53,6 +54,8 @@ CHudRadar::CHudRadar( const char *pName ) :	vgui::Panel( NULL, "HudRadar" ), CHu
 	m_flNextHostageFlashTime = 0.0;
 	m_bHostageFlash = true;
 	m_bHideRadar = false;
+	m_nPanelBaseWide = 0;
+	m_nPanelBaseTall = 0;
 
 	s_Radar = this;
 }
@@ -196,6 +199,25 @@ void CHudRadar::SetVisible(bool state)
 		// We are the hud element still, but he is in charge of the new style now.
 		g_pMapOverview->SetVisible( state );		
 	}
+}
+
+void CHudRadar::ApplySettings( KeyValues *inResourceData )
+{
+	BaseClass::ApplySettings( inResourceData );
+	GetSize( m_nPanelBaseWide, m_nPanelBaseTall );
+}
+
+void CHudRadar::OnThink()
+{
+	BaseClass::OnThink();
+	if ( m_nPanelBaseWide <= 0 || m_nPanelBaseTall <= 0 )
+		return;
+
+	const float scale = cl_radar_panel_scale.GetFloat();
+	const int wide = MAX( 1, (int)(m_nPanelBaseWide * scale + 0.5f) );
+	const int tall = MAX( 1, (int)(m_nPanelBaseTall * scale + 0.5f) );
+	if ( GetWide() != wide || GetTall() != tall )
+		SetSize( wide, tall );
 }
 
 void CHudRadar::Paint()
