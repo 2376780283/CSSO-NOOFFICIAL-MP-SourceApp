@@ -7,6 +7,7 @@
 
 #include "cbase.h"
 #include "hud_basechat.h"
+#include "VGuiMatSurface/IMatSystemSurface.h"
 
 #include <vgui/IScheme.h>
 #include <vgui/IVGui.h>
@@ -634,6 +635,52 @@ void CHudChatHistory::ApplySchemeSettings( vgui::IScheme *pScheme )
 	SetAlpha( 255 );
 }
 
+void CHudChatHistory::PaintBackground()
+{
+	// Keep the history's solid background when the chat input is open.
+	BaseClass::PaintBackground();
+	if ( m_hLineBackground <= 0 )
+		return;
+
+	Color background = GetBgColor();
+	// Blend out the strips as the solid history background fades in.
+	int baseAlpha = 192 * clamp( CHAT_HISTORY_ALPHA - background.a(), 0, CHAT_HISTORY_ALPHA ) / CHAT_HISTORY_ALPHA;
+	if ( baseAlpha == 0 )
+		return;
+
+	int screenX = 0, screenY = 0;
+	LocalToScreen( screenX, screenY );
+	int screenWide, screenTall;
+	vgui::surface()->GetScreenSize( screenWide, screenTall );
+	bool onLeft = screenX <= screenWide - screenX - GetWide();
+
+	int y, height;
+	float fade;
+	for ( int line = 0; GetVisibleLineBackground( line, y, height, fade ); ++line )
+	{
+		int alpha = (int)( baseAlpha * fade );
+		if ( alpha <= 0 )
+			continue;
+
+		int top = MAX( 0, y );
+		int bottom = MIN( GetTall(), y + height );
+		vgui::surface()->DrawSetColor( background.r(), background.g(), background.b(), alpha );
+		if ( m_hLineOuterBackground > 0 && g_pMatSystemSurface )
+		{
+			// Extend the opposite gradient to the nearest screen edge, as in CSSO 2.0.
+			g_pMatSystemSurface->DisableClipping( true );
+			vgui::surface()->DrawSetTexture( m_hLineOuterBackground );
+			if ( onLeft )
+				vgui::surface()->DrawTexturedRect( -screenX, top, 0, bottom );
+			else
+				vgui::surface()->DrawTexturedRect( GetWide(), top, screenWide - screenX, bottom );
+			g_pMatSystemSurface->DisableClipping( false );
+		}
+		vgui::surface()->DrawSetTexture( m_hLineBackground );
+		vgui::surface()->DrawTexturedRect( 0, top, GetWide(), bottom );
+	}
+}
+
 int CBaseHudChat::m_nLineCounter = 1;
 //-----------------------------------------------------------------------------
 // Purpose: Text chat input/output hud element
@@ -741,10 +788,11 @@ CHudChatFilterPanel *CBaseHudChat::GetChatFilterPanel( void )
 
 void CBaseHudChat::ApplySchemeSettings( vgui::IScheme *pScheme )
 {
-	if( IsAndroid() && CommandLine()->FindParm( "-nocustomchat" ) )
+	/* if( IsAndroid() && CommandLine()->FindParm( "-nocustomchat" ) )
 		LoadControlSettings( "resource/UI/customchat.res" );
-	else
-		LoadControlSettings( "resource/UI/BaseChat.res" );
+	else */
+
+	LoadControlSettings( "resource/UI/BaseChat.res" );
 
 	BaseClass::ApplySchemeSettings( pScheme );
 

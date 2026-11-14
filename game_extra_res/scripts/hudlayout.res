@@ -766,14 +766,15 @@
 	{
 		"ControlName"		"EditablePanel"
 		"fieldName" 		"HudChat"
+		"base_resolution_wide"	"1920"
+		"base_resolution_tall"	"1080"
 		"visible" 		"1"
 		"enabled" 		"1"
-		"xpos"			"10"	[$WIN32]
-		"xpos"			"42"	[$X360]
-		"ypos"			"275"
-		"wide"	 		"320"
-		"tall"	 		"120"
-		"PaintBackgroundType"	"2"
+		"xpos"			"10"
+		"ypos"			"r453"
+		"wide"	 		"569"
+		"tall"	 		"399"
+		"PaintBackgroundType"	"0"
 	}
 	
 	WinPanel_Match

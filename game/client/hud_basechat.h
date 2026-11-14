@@ -186,6 +186,13 @@ public:
 	CHudChatHistory( vgui::Panel *pParent, const char *panelName );
 
 	virtual void	ApplySchemeSettings(vgui::IScheme *pScheme);
+
+protected:
+	virtual void PaintBackground();
+
+private:
+	CPanelAnimationVarAliasType( int, m_hLineBackground, "line_background", "vgui/hud/chatline_background", "textureid" );
+	CPanelAnimationVarAliasType( int, m_hLineOuterBackground, "line_outer_background", "vgui/hud/chatline_outer_background", "textureid" );
 };
 
 class CHudChatFilterButton : public vgui::Button

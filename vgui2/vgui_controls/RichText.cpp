@@ -711,6 +711,41 @@ void RichText::CalculateFade( TRenderState &renderState )
 //-----------------------------------------------------------------------------
 // Purpose: Draws the text in the panel
 //-----------------------------------------------------------------------------
+bool RichText::GetVisibleLineBackground( int line, int &y, int &height, float &alpha )
+{
+	if ( line < 0 || !HasText() )
+		return false;
+
+	int firstLine = 0;
+	GetStartDrawIndex( firstLine );
+	int index = firstLine + line;
+	if ( !m_LineBreaks.IsValidIndex( index ) )
+		return false;
+
+	height = GetLineHeight() + _drawOffsetY;
+	y = _drawOffsetY + line * height;
+	if ( height <= 0 || y >= GetTall() )
+		return false;
+
+	int start = index > 0 ? m_LineBreaks[index - 1] : 0;
+	int end = MIN( m_LineBreaks[index], m_TextStream.Count() );
+	alpha = 0.0f;
+	// Newlines and the terminating NUL do not have a message background.
+	for ( int i = start; i < end; ++i )
+	{
+		if ( !iswspace( m_TextStream[i] ) && m_TextStream[i] != 0 )
+		{
+			TRenderState state;
+			GenerateRenderStateForTextStreamIndex( i, state );
+			TFade &fade = m_FormatStream[state.formatStreamIndex].fade;
+			alpha = ( m_bResetFades || fade.flFadeLength < 0.0f ) ? 1.0f :
+				( fade.flFadeLength > 0.0f ? clamp( (float)( ( fade.flFadeStartTime - system()->GetCurrentTime() ) / fade.flFadeLength ), 0.0f, 1.0f ) : 0.0f );
+			break;
+		}
+	}
+	return true;
+}
+
 void RichText::Paint()
 {
 	// Assume the worst

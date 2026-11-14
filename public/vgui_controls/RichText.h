@@ -124,6 +124,10 @@ public:
 	void SetDrawTextOnly();
 
 protected:
+	// Read the same visible line geometry and fade used by Paint().
+	// Returns false at the end of the visible text; blank lines have zero alpha.
+	bool GetVisibleLineBackground( int line, int &y, int &height, float &alpha );
+
 	virtual void OnThink();
 	virtual void PerformLayout();  // layout the text in the window
 	virtual void ApplySchemeSettings(IScheme *pScheme);
