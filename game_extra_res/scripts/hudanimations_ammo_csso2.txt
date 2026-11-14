@@ -1,0 +1,24 @@
+event HUDAmmoShoot
+{
+	Animate				HudAmmo			bullet_icon_xoffset			"-10"									Linear	0.0		0.0
+	Animate				HudAmmo			bullet_icon_last_alpha		"0.0"									Linear	0.0		0.0
+	Animate				HudAmmo			bullet_shell_icon_xoffset	"0"										Linear	0.0		0.0
+	Animate				HudAmmo			bullet_shell_icon_yoffset	"0"										Linear	0.0		0.0
+	Animate				HudAmmo			bullet_shell_icon_alpha		"1.0"									Linear	0.0		0.0
+
+	Animate				HudAmmo			bullet_icon_xoffset			"0"										Linear	0.0		0.13
+	Animate				HudAmmo			bullet_icon_last_alpha		"1.0"									Linear	0.0		0.13
+	Animate				HudAmmo			bullet_shell_icon_xoffset	"120"									Linear	0.0		0.5
+	Animate				HudAmmo			bullet_shell_icon_yoffset	"120"									Accel	0.0		0.5
+	Animate				HudAmmo			bullet_shell_icon_alpha		"0.0"									Linear	0.125	0.375
+}
+
+event HUDAmmoKill
+{
+	Animate				HudAmmo			kill_icon_first_scale		"0.4"									Linear	0.0		0.0
+	Animate				HudAmmo			kill_icon_first_alpha		"0.0"									Linear	0.0		0.0
+
+	Animate				HudAmmo			kill_icon_first_scale		"1.25"									Linear	0.0		0.13
+	Animate				HudAmmo			kill_icon_first_alpha		"1.0"									Linear	0.0		0.13
+	Animate				HudAmmo			kill_icon_first_scale		"1.0"									Linear	0.13	0.2
+}
