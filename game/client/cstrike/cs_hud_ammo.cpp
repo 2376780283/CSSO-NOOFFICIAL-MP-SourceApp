@@ -21,6 +21,9 @@
 #include "c_cs_player.h"
 #include "cs_client_gamestats.h"
 #include "cs_gamerules.h"
+#include "cs_hud_scaledpanel.h"
+
+ConVar cl_hud_scale( "cl_hud_scale", "1.0", FCVAR_ARCHIVE, "Scale the main HUD panels (0.5 to 2.0).", true, 0.5f, true, 2.0f );
 
 using namespace vgui;
 
@@ -33,9 +36,9 @@ extern ConVar cl_draw_only_deathnotices;
 //-----------------------------------------------------------------------------
 // Purpose: Displays current ammunition level
 //-----------------------------------------------------------------------------
-class CHudAmmo : public CHudElement, public EditablePanel
+class CHudAmmo : public CHudElement, public CCSHudScaledPanel
 {
-	DECLARE_CLASS_SIMPLE( CHudAmmo, EditablePanel );
+	DECLARE_CLASS_SIMPLE( CHudAmmo, CCSHudScaledPanel );
 
 public:
 	CHudAmmo( const char *pElementName );
@@ -80,10 +83,11 @@ DECLARE_HUDELEMENT( CHudAmmo );
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CHudAmmo::CHudAmmo( const char *pElementName ): CHudElement( pElementName ), EditablePanel( NULL, "HudAmmo" )
+CHudAmmo::CHudAmmo( const char *pElementName ): CHudElement( pElementName ), CCSHudScaledPanel( NULL, "HudAmmo" )
 {
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );
+	SetHudScaleAnchor( 1.0f, 1.0f );
 
 	SetHiddenBits( HIDEHUD_WEAPONSELECTION | HIDEHUD_NOT_OBSERVING_PLAYERS );
 

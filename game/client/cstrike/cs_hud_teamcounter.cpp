@@ -19,6 +19,7 @@
 #include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/VectorImagePanel.h>
 #include "c_plantedc4.h"
+#include "cs_hud_scaledpanel.h"
 
 using namespace vgui;
 
@@ -26,9 +27,9 @@ ConVar hud_playercount_pos( "hud_playercount_pos", "0", FCVAR_ARCHIVE, "0 = defa
 extern ConVar cl_draw_only_deathnotices;
 
 
-class CHudTeamCounter: public CHudElement, public EditablePanel
+class CHudTeamCounter: public CHudElement, public CCSHudScaledPanel
 {
-	DECLARE_CLASS_SIMPLE( CHudTeamCounter, EditablePanel );
+	DECLARE_CLASS_SIMPLE( CHudTeamCounter, CCSHudScaledPanel );
 
 public:
 	CHudTeamCounter( const char *pElementName );
@@ -63,7 +64,7 @@ private:
 
 DECLARE_HUDELEMENT( CHudTeamCounter );
 
-CHudTeamCounter::CHudTeamCounter( const char *pElementName ): CHudElement( pElementName ), EditablePanel( NULL, "HudTeamCounter" )
+CHudTeamCounter::CHudTeamCounter( const char *pElementName ): CHudElement( pElementName ), CCSHudScaledPanel( NULL, "HudTeamCounter" )
 {
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );

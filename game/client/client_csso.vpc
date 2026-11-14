@@ -397,6 +397,7 @@ $Project "Client (CStrike)"
 			{
 				$File	"cstrike\cs_hud_account.cpp"
 				$File	"cstrike\cs_hud_ammo.cpp"
+				$File	"cstrike\cs_hud_scaledpanel.h"
 				$File	"cstrike\cs_hud_chat.cpp"
 				$File	"cstrike\cs_hud_chat.h"
 				$File	"cstrike\cs_hud_damageindicator.cpp"

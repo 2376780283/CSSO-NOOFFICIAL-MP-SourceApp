@@ -25,6 +25,7 @@ using namespace vgui;
 #include "c_cs_player.h"
 
 #include "convar.h"
+#include "cs_hud_scaledpanel.h"
 
 extern ConVar cl_hud_healthammo_style;
 extern ConVar cl_hud_background_alpha;
@@ -156,9 +157,9 @@ void ContinuousProgressBarWithBorder::Paint()
 //-----------------------------------------------------------------------------
 // Purpose: Health panel
 //-----------------------------------------------------------------------------
-class CHudHealthArmor : public CHudElement, public EditablePanel
+class CHudHealthArmor : public CHudElement, public CCSHudScaledPanel
 {
-	DECLARE_CLASS_SIMPLE( CHudHealthArmor, EditablePanel );
+	DECLARE_CLASS_SIMPLE( CHudHealthArmor, CCSHudScaledPanel );
 
 public:
 	CHudHealthArmor( const char *pElementName );
@@ -207,10 +208,11 @@ DECLARE_HUDELEMENT( CHudHealthArmor );
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CHudHealthArmor::CHudHealthArmor( const char *pElementName ) : CHudElement( pElementName ), EditablePanel(NULL, "HudHealthArmor")
+CHudHealthArmor::CHudHealthArmor( const char *pElementName ) : CHudElement( pElementName ), CCSHudScaledPanel(NULL, "HudHealthArmor")
 {
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );
+	SetHudScaleAnchor( 0.0f, 1.0f );
 
 	SetHiddenBits( HIDEHUD_NOT_OBSERVING_PLAYERS );
 

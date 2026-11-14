@@ -10,7 +10,7 @@
 #pragma once
 #endif
 
-#include <vgui_controls/EditablePanel.h>
+#include "cs_hud_scaledpanel.h"
 #include <vgui_controls/VectorImagePanel.h>
 #include <vgui_controls/Label.h>
 #include "hudelement.h"
@@ -69,9 +69,9 @@ inline bool IsValidColor( const Color &c )
 }
 
 // CHudWeaponSelection is already taken :(
-class CCSHudWeaponSelection: public CHudElement, public EditablePanel
+class CCSHudWeaponSelection: public CHudElement, public CCSHudScaledPanel
 {
-	DECLARE_CLASS_SIMPLE( CCSHudWeaponSelection, EditablePanel );
+	DECLARE_CLASS_SIMPLE( CCSHudWeaponSelection, CCSHudScaledPanel );
 public:
 	CCSHudWeaponSelection( const char *pElementName );
 	virtual void ApplySettings( KeyValues *inResourceData );

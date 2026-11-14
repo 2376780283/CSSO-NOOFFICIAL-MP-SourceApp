@@ -25,6 +25,7 @@ using namespace vgui;
 
 #include "hudelement.h"
 #include "c_cs_player.h"
+#include "cs_hud_scaledpanel.h"
 
 extern ConVar mp_team_timeout_max;
 extern ConVar cl_draw_only_deathnotices;
@@ -32,9 +33,9 @@ extern ConVar cl_draw_only_deathnotices;
 //-----------------------------------------------------------------------------
 // Purpose: Money panel
 //-----------------------------------------------------------------------------
-class CHudUniqueAlerts: public CHudElement, public EditablePanel
+class CHudUniqueAlerts: public CHudElement, public CCSHudScaledPanel
 {
-	DECLARE_CLASS_SIMPLE( CHudUniqueAlerts, EditablePanel );
+	DECLARE_CLASS_SIMPLE( CHudUniqueAlerts, CCSHudScaledPanel );
 
 public:
 	CHudUniqueAlerts( const char *pElementName );
@@ -66,7 +67,7 @@ DECLARE_HUDELEMENT( CHudUniqueAlerts );
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CHudUniqueAlerts::CHudUniqueAlerts( const char *pElementName ): CHudElement( pElementName ), EditablePanel( NULL, "HudUniqueAlerts" )
+CHudUniqueAlerts::CHudUniqueAlerts( const char *pElementName ): CHudElement( pElementName ), CCSHudScaledPanel( NULL, "HudUniqueAlerts" )
 {
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );

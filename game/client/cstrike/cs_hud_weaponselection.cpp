@@ -26,6 +26,7 @@ CCSHudWeaponSelection::CCSHudWeaponSelection( const char* pElementName ) : CHudE
 {
 	vgui::Panel *pParent = g_pClientMode->GetViewport();
 	SetParent( pParent );
+	SetHudScaleAnchor( 1.0f, 1.0f );
 
 	SetHiddenBits( HIDEHUD_NOT_OBSERVING_PLAYERS );
 
