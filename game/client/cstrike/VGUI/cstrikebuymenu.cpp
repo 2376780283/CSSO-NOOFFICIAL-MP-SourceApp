@@ -7,6 +7,7 @@
 
 #include "cbase.h"
 #include "cstrikebuymenu.h"
+#include "cstrikebuywheel.h"
 #include <vgui/ISurface.h>
 #include <vgui/ILocalize.h>
 #include <vgui/IInput.h>
@@ -418,6 +419,9 @@ void CCSBuyMenuItemButton::SetWeaponID( CSWeaponID nWeaponID )
 
 CCSBuyMenuPlayerImage::CCSBuyMenuPlayerImage( Panel* parent, const char* panelName ): EditablePanel( parent, panelName )
 {
+	m_pPreviewScenes = new KeyValues("BuyPreviewScenes");
+	m_pPreviewScenes->LoadFromFile(g_pFullFileSystem,"resource/ui/buymenu_csso2_scenes.res","GAME");
+	m_nPreviewMode = 0;
 	m_nFOV = 54;
 	m_hPlayerModel = NULL;
 	m_hWeaponModel = NULL;
@@ -435,6 +439,7 @@ CCSBuyMenuPlayerImage::CCSBuyMenuPlayerImage( Panel* parent, const char* panelNa
 
 CCSBuyMenuPlayerImage::~CCSBuyMenuPlayerImage()
 {
+	m_pPreviewScenes->deleteThis();
 	if ( m_hPlayerModel.Get() )
 	{
 		m_hPlayerModel->Remove();
@@ -480,6 +485,7 @@ void CCSBuyMenuPlayerImage::ApplySettings( KeyValues* inResourceData )
 
 void CCSBuyMenuPlayerImage::OnMousePressed( vgui::MouseCode code )
 {
+	if(m_nPreviewMode==2 || code!=MOUSE_LEFT) return;
 	RequestFocus();
 
 	// Save where they clicked
@@ -684,7 +690,7 @@ void CCSBuyMenuPlayerImage::SetWeaponModel( const char* pszModel )
 
 void CCSBuyMenuPlayerImage::SetWeaponSkin( C_CSPlayer *pPlayer, CSWeaponID weaponID )
 {
-	if ( !m_hWeaponModel.Get() )
+	if ( !m_hWeaponModel.Get() || !pPlayer )
 		return;
 
 	m_nCurrentWeaponID = weaponID;
@@ -796,6 +802,41 @@ bool CCSBuyMenuPlayerImage::DoesModelSupportGloves(const char* pszGlovesViewMode
 	return false;
 }
 
+void CCSBuyMenuPlayerImage::SetPreviewScene(int mode, const char *model, C_CSPlayer *player, CSWeaponID weapon)
+{
+ m_nPreviewMode=mode;
+ ResetRotation();
+ m_bMousePressed=false;
+ KeyValues *scene=m_pPreviewScenes->FindKey(mode==1?"scene_worldmodel":mode==2?"scene_viewmodel":"scene_playermodel");
+ if(scene)
+ {
+  KeyValues *lights=scene->FindKey("lights");
+  if(lights) { m_nNumLightDescs=0; ParseLightInfo(lights); }
+ }
+ if(mode==0)
+ {
+  if(player && player->GetModel()) SetPlayerModel(modelinfo->GetModelName(player->GetModel()));
+  m_nFOV=20; m_vecCameraPos.Init(226.06f,73.87f,64.82f); m_angCameraAng.Init(2.75f,-162.13f,0);
+ }
+ else if(model && model[0])
+ {
+  SetWeaponModel(NULL); SetPlayerModel(model);
+  if(!m_hPlayerModel.Get()) return;
+  m_hPlayerModel->SetAbsOrigin(vec3_origin); m_hPlayerModel->SetAbsAngles(vec3_angle);
+  m_hPlayerModel->ClearMaterialOverride();
+  if(player)
+  {
+   int kit=CSLoadout()->GetWeaponSkinForPlayerWeaponid(player,weapon);
+   IMaterial *skin=g_SkinDatabase.GetSkinMaterial(kit);
+   if(skin) m_hPlayerModel->SetMaterialOverride(skin,0);
+  }
+  m_nFOV=36;
+  m_vecCameraPos=mode==1?Vector(60,52,0):Vector(-16,0,0);
+  m_angCameraAng=mode==1?QAngle(0,225,0):QAngle(0,0,0);
+  if(mode==1) { Vector mins,maxs; m_hPlayerModel->GetRenderBounds(mins,maxs); m_vecCameraPos+=(mins+maxs)*0.5f; }
+ }
+}
+
 void CCSBuyMenuPlayerImage::Paint()
 {
 	C_BasePlayer* pLocalPlayer = C_BasePlayer::GetLocalPlayer();
@@ -835,7 +876,7 @@ void CCSBuyMenuPlayerImage::Paint()
 	}
 
 	// do we have a valid sequence?
-	if ( m_hPlayerModel->GetSequence() != -1 )
+	if ( m_nPreviewMode == 0 && m_hPlayerModel->GetSequence() != -1 )
 	{
 		m_hPlayerModel->FrameAdvance( gpGlobals->frametime );
 	}
@@ -877,7 +918,7 @@ void CCSBuyMenuPlayerImage::Paint()
 	m_hPlayerModel->DrawModel( STUDIO_RENDER );
 	if ( m_hWeaponModel.Get() )
 		m_hWeaponModel->DrawModel( STUDIO_RENDER );
-	if ( m_hGlovesModel.Get() )
+	if ( m_nPreviewMode == 0 && m_hGlovesModel.Get() )
 		m_hGlovesModel->DrawModel( STUDIO_RENDER );
 
 	modelrender->SuppressEngineLighting( false );
@@ -1090,7 +1131,22 @@ CCSBuyMenu::CCSBuyMenu( IViewPort* pViewPort ): Frame( NULL, PANEL_BUY )
 	if ( !m_kvBuyMenuConfig->LoadFromFile( g_pFullFileSystem, "scripts/buymenuconfig.txt", "GAME" ) )
 		DevWarning( "Failed to load the buy menu config! Buy menu won't work!\n" );
 
-	LoadControlSettings( "Resource/UI/BuyMenu.res" );
+	m_pNameBackground = new ImagePanel(this,"ItemNameBackground");
+	m_pNameBackground->SetImage("ui/buymenu_item_preview_name_default_background");
+	m_pNameBackground->SetShouldScaleImage(true);
+	m_pNameBackground->SetMouseInputEnabled(false);
+	m_pNameBackground->SetVisible(false);
+	m_pMoneyBackground = new ImagePanel(this,"AccountBackground");
+	m_pMoneyBackground->SetImage("hud/account_background");
+	m_pMoneyBackground->SetShouldScaleImage(true);
+	m_pMoneyBackground->SetMouseInputEnabled(false);
+	m_pWheel = NULL;
+	// Labels resolve tokens while loading the layout, before the wheel is constructed.
+	g_pVGuiLocalize->AddFile("resource/buymenu2_english.txt","GAME",true);
+	g_pVGuiLocalize->AddFile("resource/buymenu2_%language%.txt","GAME",true);
+	LoadControlSettings( "resource/ui/buymenu_csso2.res" );
+	m_pWheel = new CCSBuyWheel( this );
+	InvalidateLayout(true);
 }
 
 CCSBuyMenu::~CCSBuyMenu()
@@ -1141,6 +1197,7 @@ void CCSBuyMenu::ShowPanel( bool bShow )
 		m_pPlayerModel->ResetRotation(); // reset the mouse state so it wont rotate the player when you get back in
 		ResetWeapon();
 		m_pItemNameLabel->SetVisible( false );
+		m_pNameBackground->SetVisible(false);
 		m_pItemDescriptionLabel->SetVisible( false );
 
 		int iPanel = 1;
@@ -1212,6 +1269,44 @@ void CCSBuyMenu::ShowPanel( bool bShow )
 
 	m_pViewPort->ShowBackGround( bShow );
 	HideCategory();
+	if ( bShow )
+	{
+		// Retain the CSSO preview and status widgets, replacing the button layout.
+		for ( int i = 0; i < GetChildCount(); ++i )
+		{
+			Panel *child = GetChild(i);
+			if ( child == m_pBuyItemsBackground ) child->SetVisible(false);
+		}
+		// Resolve again on open, including current key bindings and missing-resource fallback.
+		struct ActionText { const char *panel; const char *token; const wchar_t *fallback; };
+		const ActionText actions[]={
+			{"CancelButton","#CStrike_BuyMenu_Cancel",L"[ESC] Cancel"},
+			{"BuyDropLabel","#CStrike_BuyMenu_BuyDrop",L"Hold [CTRL] Buy && Throw"},
+			{"RebuyButton","#CStrike_BuyMenu_ReBuy",L"Re-Buy Previous"},
+			{"AutobuyButton","#CStrike_BuyMenu_AutoBuy",L"Auto Buy"},
+			{"SellBackAllButton","#CStrike_BuyMenu_SellBackAll",L"Refund All"}
+		};
+		for(int i=0;i<ARRAYSIZE(actions);++i)
+		{
+			Label *label=dynamic_cast<Label*>(FindChildByName(actions[i].panel));
+			const wchar_t *text=g_pVGuiLocalize->Find(actions[i].token);
+			wchar_t resolved[512];
+			UTIL_ReplaceKeyBindings(text?text:actions[i].fallback,0,resolved,sizeof(resolved));
+			if(label) label->SetText(resolved);
+		}
+		m_pWheel->ReloadLoadout();
+		m_pWheel->MainPage();
+		m_iBuyTimeLeft=-1;
+		m_pBuyTimeLeftLabel->SetVisible(true);
+		m_pWheel->SetVisible(true);
+		m_pWheel->SetZPos(8);
+		m_pPlayerModel->SetZPos(6);
+		m_pPlayerModel->SetMouseInputEnabled(true);
+		m_pMoneyLabel->SetZPos(7);
+		m_pBuyTimeLeftLabel->SetZPos(7);
+		m_bDropBuy=false;
+		HideSpecialMessage(GlobalMessage);
+	}
 }
 
 bool g_bBuyMenuOpen = false;
@@ -1221,13 +1316,51 @@ void CCSBuyMenu::SetVisible( bool bState )
 	g_bBuyMenuOpen = bState;
 }
 
+void CCSBuyMenu::PerformLayout()
+{
+ BaseClass::PerformLayout();
+ int sw,sh; surface()->GetScreenSize(sw,sh); SetBounds(0,0,sw,sh);
+ if(!m_pWheel) return;
+ const float s=sh/1080.0f, w=sw/1920.0f;
+ m_pWheel->SetBounds((int)(300*w),(int)(68*s),(int)(612*s),(int)(612*s));
+ // SetSize posts OnSizeChanged asynchronously; lay out new sectors now too.
+ m_pWheel->InvalidateLayout(true);
+ m_pPlayerModel->SetBounds((int)(600*w),0,(int)(1400*w),(int)(986*s));
+ m_pMoneyBackground->SetBounds((int)(12*s),(int)(350*s),(int)(166*s),(int)(48*s));
+ m_pMoneyBackground->SetZPos(6);
+ m_pMoneyLabel->SetBounds((int)(31*s),(int)(352*s),(int)(147*s),(int)(44*s));
+ m_pBuyTimeLeftLabel->SetBounds(0,(int)(12*s),sw,(int)(40*s));
+ m_pItemNameLabel->SetBounds((int)(1028*w),sh-(int)(336*s),(int)(580*w),(int)(32*s));
+ m_pNameBackground->SetBounds((int)(1028*w),sh-(int)(336*s),(int)(580*w),(int)(32*s));
+ m_pNameBackground->SetZPos(6);
+ m_pItemNameLabel->SetTextInset((int)(8*s),0);
+ m_pItemDescriptionLabel->SetBounds((int)(1028*w),sh-(int)(304*s),(int)(580*w),(int)(209*s));
+ m_pItemDescriptionLabel->SetTextInset((int)(32*s),(int)(32*s));
+ m_pSpecialMessageLabel->SetBounds((int)(300*w),(int)(694*s),(int)(612*s),(int)(24*s));
+ m_pItemNameLabel->SetZPos(7); m_pItemDescriptionLabel->SetZPos(7); m_pSpecialMessageLabel->SetZPos(7);
+ struct BottomItem { const char *name; float x; };
+ const BottomItem bottom[]={{"CancelButton",0},{"BuyDropLabel",336},{"RebuyButton",648},{"AutobuyButton",960},{"SellBackAllButton",1272}};
+ for(int i=0;i<ARRAYSIZE(bottom);++i)
+ {
+  Panel *p=FindChildByName(bottom[i].name);
+  if(p) { p->SetBounds((int)(bottom[i].x*w),sh-(int)(95*s),(int)(312*w),(int)(95*s)); p->SetZPos(9); }
+ }
+ Panel *border=FindChildByName("BorderBottom");
+ if(border) { border->SetBounds(0,sh-(int)(95*s),sw,(int)(95*s)); border->SetZPos(8); border->SetMouseInputEnabled(false); border->SetKeyBoardInputEnabled(false); }
+ m_pItemNameLabel->SetMouseInputEnabled(false);
+ m_pItemDescriptionLabel->SetMouseInputEnabled(false);
+ m_pSpecialMessageLabel->SetMouseInputEnabled(false);
+}
+
 void CCSBuyMenu::Update()
 {
+ m_pWheel->Refresh();
 	C_CSPlayer* pPlayer = C_CSPlayer::GetLocalCSPlayer();
 	if ( !pPlayer )
 		return;
 
-	if ( !pPlayer->IsInBuyZone() )
+	if ( !pPlayer->IsInBuyZone() || !pPlayer->IsAlive() ||
+		(CSGameRules()->IsBuyTimeElapsed() && !CSGameRules()->IsPlayingGunGameDeathmatch()) )
 	{
 		// player has left the buy zone
 		ShowPanel( false );
@@ -1236,6 +1369,7 @@ void CCSBuyMenu::Update()
 
 	if ( mp_maxmoney.GetInt() > 0 )
 	{
+		m_pMoneyBackground->SetVisible(true);
 		m_pMoneyLabel->SetVisible( true );
 		if ( m_iAccount != pPlayer->GetAccount() )
 		{
@@ -1247,6 +1381,7 @@ void CCSBuyMenu::Update()
 	}
 	else
 	{
+		m_pMoneyBackground->SetVisible(false);
 		m_pMoneyLabel->SetVisible( false );
 	}
 
@@ -1263,13 +1398,15 @@ void CCSBuyMenu::Update()
 		int iHours = m_iBuyTimeLeft / 3600;
 		int iMinutes = (m_iBuyTimeLeft - 3600 * iHours) / 60;
 		int iSeconds = m_iBuyTimeLeft % 60;
-		V_snwprintf( wszTimer, sizeof( wszTimer ), L"%.2d : %.2d : %.2d", iHours, iMinutes, iSeconds );
+		if(m_iBuyTimeLeft>3600)
+			V_snwprintf(wszTimer,ARRAYSIZE(wszTimer),L"%d:%02d:%02d",iHours,iMinutes,iSeconds);
+		else
+			V_snwprintf(wszTimer,ARRAYSIZE(wszTimer),L"%02d:%02d",m_iBuyTimeLeft/60,iSeconds);
 
 		wchar_t wszString[256];
-		if ( CSGameRules()->IsPlayingGunGameDeathmatch() )
-			g_pVGuiLocalize->ConstructString( wszString, sizeof( wszString ), g_pVGuiLocalize->Find( "BuyMenu_ImmunityTimerText" ), 1, wszTimer );
-		else
-			g_pVGuiLocalize->ConstructString( wszString, sizeof( wszString ), g_pVGuiLocalize->Find( "BuyMenu_TimerText" ), 1, wszTimer );
+		const wchar_t *format=g_pVGuiLocalize->Find(CSGameRules()->IsPlayingGunGameDeathmatch()?
+			"#CStrike_BuyMenu_ImmunityTimeRemaining":"#CStrike_BuyMenu_BuyTimeRemaining");
+		g_pVGuiLocalize->ConstructString(wszString,sizeof(wszString),format?format:L"%s1",1,wszTimer);
 
 		m_pBuyTimeLeftLabel->SetText( wszString );
 	}
@@ -1301,9 +1438,11 @@ void CCSBuyMenu::OnCommand( const char* command )
 	if ( !pPlayer )
 		return;
 
-	if ( !Q_stricmp( command, "vguicancel" ) )
+	if ( !Q_stricmp(command,"buymenu") ) { m_pWheel->MainPage(); return; }
+	if ( !Q_stricmp(command,"Cancel") || !Q_stricmp(command,"vguicancel") )
 	{
-		Close();
+		if(m_pWheel->InCategory()) { m_pWheel->MainPage(); return; }
+		ShowPanel( false );
 
 		gViewPortInterface->ShowBackGround( false );
 	}
@@ -1333,7 +1472,7 @@ void CCSBuyMenu::OnCommand( const char* command )
 				{
 					engine->ClientCmd( command );
 					CSWeaponID nWeaponID = AliasToWeaponID( command + 4 );
-					if ( nWeaponID < WEAPON_LAST ) // it is a firearm
+					if ( nWeaponID < WEAPON_LAST && !m_pWheel->IsVisible() )
 						HideCategory();
 				}
 			}
@@ -1368,16 +1507,23 @@ Panel* CCSBuyMenu::CreateControlByName( const char* controlName )
 void CCSBuyMenu::OnKeyCodeTyped( KeyCode code )
 {
 	// ESC cancels
+	if ( code >= KEY_1 && code <= KEY_9 && m_pWheel->IsVisible() )
+	{
+		m_pWheel->SelectSlot( code - KEY_1 + 1 );
+		return;
+	}
 	if ( code == KEY_ESCAPE )
 	{
-		if ( m_bShowingCategory )
+		if ( m_pWheel->IsVisible() && m_pWheel->InCategory() )
+			m_pWheel->MainPage();
+		else if ( m_bShowingCategory )
 			HideCategory();
 		else
 			ShowPanel( false );
 	}
 	else if ( m_iBuyMenuKey != BUTTON_CODE_INVALID && m_iBuyMenuKey == code )
 	{
-		HideCategory();
+		m_pWheel->MainPage();
 	}
 	else if ( m_iReBuyKey != BUTTON_CODE_INVALID && m_iReBuyKey == code )
 	{
@@ -1611,6 +1757,31 @@ void CCSBuyMenu::HideCategory()
 	HideSpecialMessage( GlobalMessage );
 }
 
+ConVar cs_buymenu_item_render_mode("cs_buymenu_item_render_mode","0",FCVAR_ARCHIVE,"Buy preview: 0 player, 1 world model, 2 view model",true,0,true,2);
+
+void CCSBuyMenu::SetWheelPreviewWeapon( const char* pszWeaponModel, const char* pszWeaponSequence, CSWeaponID weaponID )
+{
+ if (m_pPlayerModel)
+ {
+  C_CSPlayer *player=C_CSPlayer::GetLocalCSPlayer();
+  if (player)
+  {
+   const char *playerModel=modelinfo->GetModelName(player->GetModel());
+   if (playerModel && playerModel[0]) m_pPlayerModel->SetPlayerModel(playerModel);
+  }
+  int mode=cs_buymenu_item_render_mode.GetInt();
+  CCSWeaponInfo *info=weaponID>WEAPON_NONE && weaponID<WEAPON_KNIFE?GetWeaponInfo(weaponID):NULL;
+  if(mode==2 && (!info || !info->szViewModel[0])) mode=1;
+  m_pPlayerModel->SetPreviewScene(mode,mode==2?info->szViewModel:pszWeaponModel,player,weaponID);
+  if(mode==0)
+  {
+   m_pPlayerModel->SetWeaponModel(pszWeaponModel);
+   m_pPlayerModel->SetSequence(pszWeaponSequence);
+   m_pPlayerModel->SetWeaponSkin(player,weaponID);
+  }
+ }
+}
+
 void CCSBuyMenu::SetPlayerImageWeapon( const char* pszWeaponModel, const char* pszWeaponSequence, CSWeaponID weaponID )
 {
     C_CSPlayer* pLocalPlayer = C_CSPlayer::GetLocalCSPlayer();
@@ -1621,6 +1792,7 @@ void CCSBuyMenu::SetPlayerImageWeapon( const char* pszWeaponModel, const char* p
 
 void CCSBuyMenu::SetItemNameAndDescription( const char* pszName, const char* pszDescription )
 {
+	m_pNameBackground->SetVisible(pszName && pszName[0]);
 	if ( pszName )
 	{
 		m_pItemNameLabel->SetVisible( true );
@@ -1675,9 +1847,7 @@ void CCSBuyMenu::ResetWeapon()
 			pszPlayerSequence = pWeapon->GetCSWpnData().m_szBuyMenuAnim;
 	}
 
-	m_pPlayerModel->SetWeaponModel( pszPlayerWeaponModel );
-	m_pPlayerModel->SetSequence( pszPlayerSequence );
-	m_pPlayerModel->SetWeaponSkin( pPlayer, weaponID );
+	SetWheelPreviewWeapon(pszPlayerWeaponModel,pszPlayerSequence,weaponID);
 }
 
 void CCSBuyMenu::ShowSpecialMessage( const char* pszText, BuyMenuSpecialMessageType_t nMessageType )
@@ -1689,6 +1859,7 @@ void CCSBuyMenu::ShowSpecialMessage( const char* pszText, BuyMenuSpecialMessageT
 	{
 		if ( pszText && *pszText )
 		{
+			m_pSpecialMessageLabel->SetVisible(true);
 			m_pSpecialMessageLabel->SetText( pszText );
 			m_nMessageType = nMessageType;
 		}
@@ -1704,6 +1875,7 @@ void CCSBuyMenu::ShowSpecialMessage( const wchar_t* pwszText, BuyMenuSpecialMess
 	{
 		if ( pwszText && *pwszText )
 		{
+			m_pSpecialMessageLabel->SetVisible(true);
 			m_pSpecialMessageLabel->SetText( pwszText );
 			m_nMessageType = nMessageType;
 		}
@@ -1717,6 +1889,7 @@ void CCSBuyMenu::HideSpecialMessage( BuyMenuSpecialMessageType_t nMessageType )
 
 	if ( nMessageType >= m_nMessageType )
 	{
+		m_pSpecialMessageLabel->SetVisible(false);
 		m_pSpecialMessageLabel->SetText( "" );
 		m_nMessageType = InvalidMessage;
 	}

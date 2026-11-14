@@ -1750,6 +1750,43 @@ Scheme
 				"antialias"	"1"
 			}
 		}
+		// CSSO2 1080-reference sizes converted to this scheme's 480-reference units.
+		"BuyMenuAccountFont"
+		{
+			"1" { "name" "Stratum2 Bold" "tall" "16" "weight" "0" "antialias" "1" "custom" "1" }
+		}
+		"BuyMenuItemPreviewNameFont"
+		{
+			"1" { "name" "Stratum2 Bold" "tall" "10" "weight" "0" "antialias" "1" "custom" "1" }
+		}
+		"BuyMenuItemPreviewDescriptionFont"
+		{
+			"1" { "name" "Stratum2 Regular" "tall" "9" "weight" "0" "antialias" "1" "custom" "1" }
+		}
+		"BuyMenuSpecialMessageFont"
+		{
+			"1" { "name" "Stratum2 Regular" "tall" "9" "weight" "0" "antialias" "1" "dropshadow" "1" "custom" "1" }
+		}
+		"BuyMenuBottomButtonFont"
+		{
+			"1" { "name" "Stratum2 Bold" "tall" "13" "weight" "0" "antialias" "1" "custom" "1" }
+		}
+		"BuyMenuBuyTimeRemainingFont"
+		{
+			"1" { "name" "Stratum2 Bold" "tall" "17" "weight" "0" "antialias" "1" "dropshadow" "1" "custom" "1" }
+		}
+		"BuyMenuCategoryButtonFont"
+		{
+			"1" { "name" "Stratum2 Bold" "tall" "12" "weight" "0" "antialias" "1" "custom" "1" }
+		}
+		"BuyMenuItemButtonFont"
+		{
+			"1" { "name" "Stratum2 Regular" "tall" "9" "weight" "0" "antialias" "1" "custom" "1" }
+		}
+		"BuyMenuItemButtonPriceFont"
+		{
+			"1" { "name" "Stratum2 Bold" "tall" "11" "weight" "0" "antialias" "1" "custom" "1" }
+		}
 		"BuyMenuButtonsFont"
 		{
 			"1"
@@ -2860,17 +2897,18 @@ Scheme
 	// specifies all the custom (non-system) font files that need to be loaded to service the above described fonts
 	CustomFontFiles
 	{
-		"1"		"resource/cs.ttf"
-		"2"		"resource/csd.ttf"
-		"3"		"resource/Cstrike.ttf"
-		"4"		"resource/CSlogo.ttf"
-		"5"		"resource/stratum2bold.ttf"
-		"6"		"resource/stratum2medium.ttf"
-		"7"		"resource/stratum2regular.ttf"
-		"8"		"resource/stratum2bold_monodigit.ttf"
-		"9"		"resource/stratum2regular_monodigit.ttf"
-		"10"	  "resource/notosans-regular.ttf"
-		"11"      "resource/fonts/StratumNo2.ttf"
+		// Explicit family names keep Android/FreeType from falling back to system digits.
+		"1" { "font" "resource/cs.ttf" "name" "cs" }
+		"2" { "font" "resource/csd.ttf" "name" "csd" }
+		"3" { "font" "resource/Cstrike.ttf" "name" "Counter-Strike" }
+		"4" { "font" "resource/CSlogo.ttf" "name" "Counter-Strike Logo" }
+		"5" { "font" "resource/stratum2bold.ttf" "name" "Stratum2 Bold" }
+		"6" { "font" "resource/stratum2medium.ttf" "name" "Stratum2 Medium" }
+		"7" { "font" "resource/stratum2regular.ttf" "name" "Stratum2 Regular" }
+		"8" { "font" "resource/stratum2bold_monodigit.ttf" "name" "Stratum2 Bold Monodigit" }
+		"9" { "font" "resource/stratum2regular_monodigit.ttf" "name" "Stratum2 Regular Monodigit" }
+		"10" { "font" "resource/notosans-regular.ttf" "name" "Noto Sans" }
+		"11" { "font" "resource/stratumno2.ttf" "name" "StratumNo2" }
 	}
 
 }

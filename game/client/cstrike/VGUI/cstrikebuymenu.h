@@ -16,10 +16,12 @@
 #include <game/client/iviewport.h>
 #include "cs_weapon_parse.h"
 
+namespace vgui { class ImagePanel; }
 using namespace vgui;
 
 class C_CSPlayer;
 class CAvatarImagePanel;
+class CCSBuyWheel;
 
 enum BuyMenuSpecialMessageType_t
 {
@@ -150,12 +152,15 @@ public:
 	void SetGlovesModel( const char* pszModel );
 	void SetSequence( const char* pszSequence );
 	void ResetRotation();
+	void SetPreviewScene(int mode, const char *model, C_CSPlayer *player, CSWeaponID weapon);
 
 	bool DoesModelSupportGloves( const char* pszGlovesViewModelName, const char* pszDefaultViewModelName );
 	
 	void SetWeaponSkin( C_CSPlayer *pPlayer, CSWeaponID weaponID ); 
 
 private:
+	KeyValues *m_pPreviewScenes;
+	int m_nPreviewMode;
 	int m_nFOV;
 	CTextureReference m_DefaultCubemap;
 	Vector m_vecCameraPos;
@@ -244,19 +249,24 @@ public:
 	void ShowCategory( KeyValues* kvCategory );
 	void HideCategory();
     void SetPlayerImageWeapon( const char* pszWeaponModel, const char* pszWeaponSequence, CSWeaponID weaponID );
+    void SetWheelPreviewWeapon( const char* pszWeaponModel, const char* pszWeaponSequence, CSWeaponID weaponID );
 	void SetItemNameAndDescription( const char* pszName, const char* pszDescription );
 	void ResetWeapon();
+	void PerformLayout() override;
 	void ShowSpecialMessage( const char* pszText, BuyMenuSpecialMessageType_t nMessageType );
 	void ShowSpecialMessage( const wchar_t* pwszText, BuyMenuSpecialMessageType_t nMessageType );
 	void HideSpecialMessage( BuyMenuSpecialMessageType_t nMessageType );
 
 private:
+	CCSBuyWheel* m_pWheel;
 	Label* m_pMoneyLabel;
 	Label* m_pSpecialMessageLabel;
 	Label* m_pBuyTimeLeftLabel;
 	Label* m_pItemNameLabel;
 	Label* m_pItemDescriptionLabel;
 	Panel* m_pBuyItemsBackground;
+	vgui::ImagePanel* m_pNameBackground;
+	vgui::ImagePanel* m_pMoneyBackground;
 	CCSBuyMenuPlayerImage* m_pPlayerModel;
 
 	KeyValues* m_kvBuyMenuConfig;

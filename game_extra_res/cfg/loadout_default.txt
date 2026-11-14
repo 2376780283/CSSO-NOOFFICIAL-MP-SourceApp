@@ -1,0 +1,75 @@
+"LoadoutConfig"
+{
+	"loadout_t"
+	{
+		"Heavy"
+		{
+			"nova"		"1"
+			"xm1014"		"1"
+			"sawedoff"		"1"
+			"m249"		"1"
+			"negev"		"1"
+		}
+		"Rifles"
+		{
+			"galilar"		"1"
+			"ak47"		"1"
+			"ssg08"		"1"
+			"sg553"		"1"
+			"awp"		"1"
+			"g3sg1"		"1"
+		}
+		"Pistols"
+		{
+			"glock18"		"1"
+			"elite"		"1"
+			"p250"		"1"
+			"tec9"		"1"
+			"deagle"		"1"
+		}
+		"SMGs"
+		{
+			"mac10"		"1"
+			"mp7"		"1"
+			"ump45"		"1"
+			"p90"		"1"
+			"bizon"		"1"
+		}
+	}
+	"loadout_ct"
+	{
+		"Heavy"
+		{
+			"nova"		"1"
+			"xm1014"		"1"
+			"mag7"		"1"
+			"m249"		"1"
+			"negev"		"1"
+		}
+		"SMGs"
+		{
+			"mp9"		"1"
+			"mp7"		"1"
+			"ump45"		"1"
+			"p90"		"1"
+			"bizon"		"1"
+		}
+		"Rifles"
+		{
+			"famas"		"1"
+			"m4a4"		"1"
+			"ssg08"		"1"
+			"aug"		"1"
+			"awp"		"1"
+			"scar20"		"1"
+		}
+		"Pistols"
+		{
+			"hkp2000"		"1"
+			"elite"		"1"
+			"p250"		"1"
+			"fiveseven"		"1"
+			"deagle"		"1"
+		}
+	}
+}
