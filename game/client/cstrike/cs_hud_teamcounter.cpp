@@ -145,6 +145,10 @@ void CHudTeamCounter::OnThink()
 		}
 	}
 
+	// Match the scale origin to the edge used by the unscaled panel position.
+	// Scaling a bottom-aligned panel around the top edge moves it off-screen.
+	SetHudScaleAnchor( 0.5f, m_bIsAtTheBottom ? 1.0f : 0.0f );
+
 	C_CSTeam *teamCT = GetGlobalCSTeam( TEAM_CT );
 	C_CSTeam *teamT = GetGlobalCSTeam( TEAM_TERRORIST );
 
