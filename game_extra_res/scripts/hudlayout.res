@@ -126,10 +126,10 @@
 	"HudTeamCounter"
 	{
 		"fieldName" "HudTeamCounter"
-		"xpos"	"c-96"
+		"xpos"	"0"
 		"ypos"	"2"
-		"wide"	"192"
-		"tall"  "55"
+		"wide"	"w1920"
+		"tall"  "128"
 		"base_resolution_wide"	"1920"
 		"base_resolution_tall"	"1080"
 		"visible" "1"

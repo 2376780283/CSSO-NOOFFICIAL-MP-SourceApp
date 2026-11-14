@@ -1751,6 +1751,52 @@ Scheme
 			}
 		}
 		// CSSO2 1080-reference sizes converted to this scheme's 480-reference units.
+		"HUDTeamCounterRoundFont"
+		{
+			"1"
+			{
+				"name"			"Stratum2 Bold"
+				"tall"			"12"
+				"weight"		"0"
+				"antialias"		"1"
+				"custom"		"1"
+			}
+		}
+		"HUDTeamCounterAliveCountNumberFont"
+		{
+			"1"
+			{
+				"name"			"Stratum2 Bold"
+				"tall"			"20"
+				"weight"		"0"
+				"antialias"		"1"
+				"dropshadow"	"1"
+				"custom"		"1"
+			}
+		}
+		"HUDTeamCounterAliveCountLabelFont"
+		{
+			"1"
+			{
+				"name"			"Stratum2 Bold"
+				"tall"			"6"
+				"weight"		"0"
+				"antialias"		"1"
+				"dropshadow"	"1"
+				"custom"		"1"
+			}
+		}
+		"HUDTeamCounterLargeAvatarScoreFont"
+		{
+			"1"
+			{
+				"name"			"Stratum2 Bold"
+				"tall"			"11"
+				"weight"		"0"
+				"antialias"		"1"
+				"custom"		"1"
+			}
+		}
 		"BuyMenuAccountFont"
 		{
 			"1" { "name" "Stratum2 Bold" "tall" "16" "weight" "0" "antialias" "1" "custom" "1" }
