@@ -76,6 +76,19 @@ clientscheme.res 增加四种原版字体定义，字体高度转换为本引擎
 
 图标显式关闭背景/边框/输入并放到时间背景上层。原SVG资源仍需部署；编译通过不能代替实机显示验证，也不能证明当前用户遇到的缺失仅由实体休眠造成。
 
+## 数字人数模式的贴图绘制路径修正
+
+针对 `cl_hud_playercount_showcount 1` 再次核对原版 DLL：
+
+- `0x1802cdc37/0x1802cdc4a` 查询 `HUDTeamCounterLogoCT/T`，返回值保存至 HUD 对象的 `+0x630/+0x638`。
+- 原包 `scripts/mod_textures.txt` 将这两个名称分别映射至 `vgui/hud/teamcounter_ct_background` 和 `vgui/hud/teamcounter_t_background`，源矩形均为 `(0,0,64,64)`。
+- `0x1802cf5f5/0x1802cf658` 调用人数绘制函数 `0x1802cf8f0`；其中 `0x1802cf94d–0x1802cf975` 先以 `0xffffffff` 白色绘制背景，再根据存活人数绘制数字/标签或骷髅。显示矩形读取双方 alive_count 配置，默认55×55。
+- 两份归档 VTF 与原包 SHA-256 完全一致，VMT 也一致。没有证据支持更换或重新编码贴图。
+
+移植先前通过 Scheme 管理的 ImagePanel 加载背景，现改为专用 Panel 在 Paint 中调用 CHudTexture::DrawSelf，使用 HUD 源矩形和半像素 UV。优先使用资源包里的 HUDTeamCounterLogoCT/T；旧包缺少 mod_textures 条目时，通过 AddUnsearchableHudIconToList 登记原版64×64源矩形，避免部署整份 mod_textures.txt 覆盖其他图标。数字及存活标签显式关闭背景和边框，确保底图不受 Scheme 控件背景影响。
+
+注意：原 ImagePanel 路径同样能加载正确材质，换回原版路径是对已证实实现差异的修正，尚不能证明它就是用户实机异常的唯一原因。未调整 VMT/VTF、队伍颜色及人数框位置。Android clang 语法检查和 `python waf build --targets=client` 编译链接通过，日志位于 `/data/data/com.termux/files/usr/tmp/csso-teamcounter-texture-build.log`；尚未实机验证。需要同步新的 `build/game/client/libcsso_client.so`，并确认两队背景 VMT/VTF 已部署。建议验证顶部/底部、人数从正数到0、头像/人数往返切换及不同 cl_hud_scale。
+
 ## 验证状态和后续精确化
 
 第一版编译日志 /data/data/com.termux/files/usr/tmp/csso2-teamcounter-build.log；UI修正版构建日志 /data/data/com.termux/files/usr/tmp/csso2-teamcounter-ui-fix-build.log。1920×1080、2400×1080、1280×720、1024×768 的顶/底双方各12头像坐标检查通过。尚未实机验证，坐标检查不等于实际渲染确认。

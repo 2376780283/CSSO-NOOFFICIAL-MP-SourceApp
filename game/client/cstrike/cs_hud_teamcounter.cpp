@@ -10,10 +10,10 @@
 #include "filesystem.h"
 #include "gametypes/igametypes.h"
 #include "hudelement.h"
+#include "hud.h"
 #include "iclientmode.h"
 #include "vgui_avatarimage.h"
 #include <vgui/ILocalize.h>
-#include <vgui_controls/ImagePanel.h>
 #include <vgui_controls/Label.h>
 #include <vgui_controls/VectorImagePanel.h>
 
@@ -247,6 +247,55 @@ void CTeamCounterAvatarOverlay::Paint()
 	m_owner->PaintAvatarOverlay();
 }
 
+// CSSO2 0x1802cdc37/0x1802cdc4a loads HUDTeamCounterLogoCT/T, and
+// 0x1802cf94d draws the HUD texture in white before the count or skull.
+// Keep these out of Scheme's shared Bitmap/ImagePanel state.
+class CTeamCounterBackground : public Panel
+{
+	DECLARE_CLASS_SIMPLE(CTeamCounterBackground, Panel);
+
+  public:
+	CTeamCounterBackground(Panel *parent, bool terrorist)
+		: Panel(parent, terrorist ? "TBackground" : "CTBackground"), m_terrorist(terrorist)
+	{
+		SetPaintBackgroundEnabled(false);
+		SetPaintBorderEnabled(false);
+		SetMouseInputEnabled(false);
+		SetKeyBoardInputEnabled(false);
+		SetZPos(-1);
+	}
+
+  protected:
+	void ApplySchemeSettings(IScheme *scheme)
+	{
+		BaseClass::ApplySchemeSettings(scheme);
+		m_texture = gHUD.GetIcon(m_terrorist ? "HUDTeamCounterLogoT" : "HUDTeamCounterLogoCT");
+		if (!m_texture)
+		{
+			// Older Android packs lack these mod_textures.txt entries. Register
+			// the original 64x64 image without replacing the pack's icon table.
+			CHudTexture texture;
+			Q_strncpy(texture.szTextureFile,
+					  m_terrorist ? "vgui/hud/teamcounter_t_background"
+								  : "vgui/hud/teamcounter_ct_background",
+					  sizeof(texture.szTextureFile));
+			texture.rc.left = texture.rc.top = 0;
+			texture.rc.right = texture.rc.bottom = 64;
+			m_texture = gHUD.AddUnsearchableHudIconToList(texture);
+		}
+	}
+
+	void Paint()
+	{
+		if (m_texture)
+			m_texture->DrawSelf(0, 0, GetWide(), GetTall(), Color(255, 255, 255, 255));
+	}
+
+  private:
+	bool m_terrorist;
+	CHudTextureHandle m_texture;
+};
+
 class CHudTeamCounter : public CHudElement, public CCSHudScaledPanel
 {
 	DECLARE_CLASS_SIMPLE(CHudTeamCounter, CCSHudScaledPanel);
@@ -299,7 +348,7 @@ class CHudTeamCounter : public CHudElement, public CCSHudScaledPanel
 	KeyValues *m_style;
 	Label *m_timer, *m_wins[2], *m_count[2], *m_aliveText[2];
 	Panel *m_timerBackground;
-	ImagePanel *m_background[2];
+	CTeamCounterBackground *m_background[2];
 	VectorImagePanel *m_bomb, *m_skull[2];
 	CTeamCounterAvatar *m_avatars[MAX_PLAYERS + 1];
 	bool m_bottom, m_large, m_noTimer, m_lastLegacy, m_lastPos, m_defused;
@@ -345,11 +394,11 @@ CHudTeamCounter::CHudTeamCounter(const char *name)
 		m_count[i] = new Label(this, i ? "TAliveCounterLabel" : "CTAliveCounterLabel", L"");
 		m_aliveText[i] =
 			new Label(this, i ? "TAliveTextLabel" : "CTAliveTextLabel", "#Cstrike_PlayerCount_Alive");
-		m_background[i] = new ImagePanel(this, i ? "TBackground" : "CTBackground");
-		m_background[i]->SetImage(i ? "hud/teamcounter_t_background" : "hud/teamcounter_ct_background");
-		m_background[i]->SetShouldScaleImage(true);
-		m_background[i]->SetMouseInputEnabled(false);
-		m_background[i]->SetZPos(-1);
+		m_count[i]->SetPaintBackgroundEnabled(false);
+		m_count[i]->SetPaintBorderEnabled(false);
+		m_aliveText[i]->SetPaintBackgroundEnabled(false);
+		m_aliveText[i]->SetPaintBorderEnabled(false);
+		m_background[i] = new CTeamCounterBackground(this, i != 0);
 		m_skull[i] = new VectorImagePanel(this, i ? "TSkull" : "CTSkull");
 	}
 	for (int i = 0; i <= MAX_PLAYERS; ++i)
